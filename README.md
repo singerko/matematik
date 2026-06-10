@@ -8,6 +8,12 @@ Aplikácia beží ako webová služba aj ako mobilná aplikácia pre Android. An
 
 Rodič si vie v nastaveniach vyklikať témy, ktoré chce, aby dieťa trénovalo. Potom nastaví počet príkladov a klikne na štart. Niektoré témy majú aj doplnkové konfigurácie, napríklad výber konkrétnych podtém alebo rozsahov. Do aplikácie sa snažím pridávať aj zábavnejšie hry a režimy, aby tréning nebol len jednoduché zadanie, výsledok a ďalší príklad.
 
+## Licencia a vývoj
+
+Aplikácia je voľne k dispozícii. Ktokoľvek môže kód používať, upravovať a prispôsobiť si ho pre vlastné potreby.
+
+Projekt je vytváraný pomocou AI asistencie.
+
 Ahoj! 👋
 Toto je zdrojový kód našej hry **Matematik**.
 V tejto hre si môžeš precvičovať sčítanie, odčítanie, násobenie a delenie.
