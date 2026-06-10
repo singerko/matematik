@@ -14,10 +14,6 @@ Aplikácia je voľne k dispozícii. Ktokoľvek môže kód používať, upravova
 
 Projekt je vytváraný pomocou AI, štýlom vibe coding.
 
-Ahoj! 👋
-Toto je zdrojový kód našej hry **Matematik**.
-V tejto hre si môžeš precvičovať sčítanie, odčítanie, násobenie a delenie.
-
 ## 📂 Čo kde nájdeš?
 
 Všetky dôležité veci sú v priečinku `src` (source = zdroj):
