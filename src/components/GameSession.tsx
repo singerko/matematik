@@ -1216,13 +1216,25 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                                         : guidedWarmup.solved && correct
                                                             ? 'rgba(34,197,94,0.35)'
                                                             : 'rgba(255,255,255,0.1)';
+                                                    const optionColor = showResult || guidedWarmup.solved
+                                                        ? correct
+                                                            ? '#bbf7d0'
+                                                            : '#e2e8f0'
+                                                        : '#f8fafc';
 
                                                     return (
                                                         <button
                                                             key={option}
                                                             type="button"
                                                             className="btn"
-                                                            style={{ minWidth: '4rem', background }}
+                                                            style={{
+                                                                minWidth: '4rem',
+                                                                background,
+                                                                color: optionColor,
+                                                                opacity: 1,
+                                                                border: correct && guidedWarmup.solved ? '1px solid rgba(134,239,172,0.45)' : '1px solid rgba(255,255,255,0.1)',
+                                                                cursor: guidedWarmup.solved ? 'default' : 'pointer',
+                                                            }}
                                                             onClick={() => handleGuidedWarmupChoice(option)}
                                                             disabled={guidedWarmup.solved}
                                                         >
@@ -1302,10 +1314,35 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                             )}
                                         </div>
                                     )}
-                                    <div className={`text-4xl font-mono p-4 rounded-xl border-2 ${status === 'IDLE' ? 'border-blue-500/30' :
-                                        status === 'CORRECT' ? 'border-green-500 bg-green-500/10' : 'border-red-500 bg-red-500/10'
-                                        }`} style={{ minWidth: '150px', display: 'inline-block', opacity: (guidedWarmup && !guidedWarmup.solved) || (expectedWordOperation && selectedWordOperation !== expectedWordOperation) ? 0.45 : 1 }}>
-                                        {inputValue || '?'}
+                                    <div
+                                        style={{
+                                            minWidth: '160px',
+                                            display: 'inline-flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            gap: '0.2rem',
+                                            padding: '0.75rem 1.1rem',
+                                            borderRadius: '0.8rem',
+                                            border: status === 'CORRECT'
+                                                ? '2px solid rgba(34,197,94,0.75)'
+                                                : status === 'WRONG'
+                                                    ? '2px solid rgba(239,68,68,0.75)'
+                                                    : '2px solid rgba(96,165,250,0.45)',
+                                            background: status === 'CORRECT'
+                                                ? 'rgba(34,197,94,0.14)'
+                                                : status === 'WRONG'
+                                                    ? 'rgba(239,68,68,0.14)'
+                                                    : 'rgba(15,23,42,0.78)',
+                                            boxShadow: '0 10px 28px rgba(0,0,0,0.18)',
+                                            opacity: (guidedWarmup && !guidedWarmup.solved) || (expectedWordOperation && selectedWordOperation !== expectedWordOperation) ? 0.55 : 1,
+                                        }}
+                                    >
+                                        <div style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0 }}>
+                                            Tvoja odpoveď
+                                        </div>
+                                        <div style={{ color: '#f8fafc', fontSize: '2.2rem', fontWeight: 900, fontFamily: 'monospace', lineHeight: 1 }}>
+                                            {inputValue || '?'}
+                                        </div>
                                     </div>
                                     {isSolvingWordIntermediate && (
                                         <div style={{ color: '#cbd5e1', fontSize: '0.9rem', marginTop: '0.5rem' }}>
