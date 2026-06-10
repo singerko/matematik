@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { XCircle, CheckCircle, ArrowRight, CornerDownLeft, Delete } from 'lucide-react';
 import VisualExplanation from './VisualExplanation';
 import GuidedCorrectionVisual from './GuidedCorrectionVisual';
-import { diagnoseAnswerDetailed, explainProblem, isAnswerCorrect } from '../lib/explanations';
+import { diagnoseAnswerDetailed, explainProblem, isAnswerCorrect, toNumericAnswer } from '../lib/explanations';
 import { createFollowUpProblem } from '../lib/adaptivePractice';
 import { speakText } from '../lib/speech';
 import { createEarlyGradeGuidance, createGuidedCorrection, type GuidedCorrection } from '../lib/guidedCorrection';
@@ -719,7 +719,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
         };
     };
 
-    const createWordIntermediateWrongResult = (userAnswer: number): TrainingResult => ({
+    const createWordIntermediateWrongResult = (userAnswer: number | string): TrainingResult => ({
         problem: currentProblem,
         userAnswer,
         correct: false,
@@ -815,8 +815,8 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
         if (firstIntermediateStep && !wordIntermediateSolved) {
             if (!inputValue || inputValue === '-') return;
 
-            const intermediateAnswer = parseFloat(inputValue);
-            if (Math.abs(intermediateAnswer - firstIntermediateStep.result) < 0.001) {
+            const intermediateAnswer = toNumericAnswer(inputValue);
+            if (intermediateAnswer !== null && Math.abs(intermediateAnswer - firstIntermediateStep.result) < 0.001) {
                 setWordIntermediateSolved(true);
                 setWordIntermediateError(false);
                 setInputValue('');
@@ -828,7 +828,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
             setWordIntermediateError(true);
             checkStreak(false);
             if (isTestMode) {
-                const resultItem = createWordIntermediateWrongResult(intermediateAnswer);
+                const resultItem = createWordIntermediateWrongResult(inputValue);
                 setResults(prev => [...prev, resultItem]);
                 nextProblem(resultItem);
                 return;
@@ -839,7 +839,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
         }
 
         if (!inputValue || inputValue === '-') return;
-        const answerValue = isRomanTextAnswerProblem(currentProblem) ? inputValue : parseFloat(inputValue);
+        const answerValue = inputValue;
         const isCorrect = isAnswerCorrect(currentProblem, answerValue);
 
         if (isCorrect) {
@@ -997,10 +997,10 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                 indianRemainderInput ? parseInt(indianRemainderInput, 10) : null,
             )
             : wordIntermediateError && firstIntermediateStep
-                ? createWordIntermediateWrongResult(parseFloat(inputValue))
+                ? createWordIntermediateWrongResult(inputValue)
             : createWrongResult(wordOperationError && selectedWordOperation
                 ? selectedWordOperation
-                : directAnswer?.label ?? parseFloat(inputValue));
+                : directAnswer?.label ?? inputValue);
 
         const followUp = isTestMode || currentProblem.isAdaptiveFollowUp ? null : createFollowUpProblem(currentProblem);
         if (followUp) {

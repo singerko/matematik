@@ -24,11 +24,12 @@ export interface AnswerDiagnosis {
 
 const formatExpression = (expression: string) => expression.replace(/\*/g, '×').replace(/\//g, '÷');
 
-const toNumericAnswer = (answer: number | string) => {
+export const toNumericAnswer = (answer: number | string) => {
     if (typeof answer === 'number') return Number.isNaN(answer) ? null : answer;
     const normalized = answer.trim().toLowerCase();
     if (normalized === 'áno' || normalized === 'ano' || normalized === 'prvý' || normalized === 'prvy') return 1;
     if (normalized === 'nie' || normalized === 'druhý' || normalized === 'druhy') return 0;
+    if (!/^-?(?:\d+|\d+[,.]\d+)$/.test(normalized)) return null;
     const parsed = Number(normalized.replace(',', '.'));
     return Number.isNaN(parsed) ? null : parsed;
 };
