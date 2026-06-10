@@ -102,13 +102,20 @@ const ProfileSelector: React.FC<Props> = ({ onSelect }) => {
                         {mode === 'school' && (
                             <div>
                                 <div style={{ color: '#cbd5e1', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Ročník</div>
-                                <div className="flex gap-2">
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(6.8rem, 1fr))', gap: '0.5rem' }}>
                                     {(['grade1', 'grade2', 'grade3', 'grade4', 'grade5'] as const).map((option) => (
                                         <button
                                             key={option}
                                             type="button"
-                                            className={`btn w-full ${grade === option ? 'btn-primary' : ''}`}
-                                            style={{ background: grade === option ? '' : 'rgba(255,255,255,0.08)' }}
+                                            className={`btn ${grade === option ? 'btn-primary' : ''}`}
+                                            style={{
+                                                background: grade === option ? '' : 'rgba(255,255,255,0.08)',
+                                                color: grade === option ? 'white' : '#e2e8f0',
+                                                minWidth: 0,
+                                                padding: '0.75rem 0.45rem',
+                                                whiteSpace: 'normal',
+                                                lineHeight: 1.2,
+                                            }}
                                             onClick={() => setGrade(option)}
                                         >
                                             {option === 'grade1' ? '1. ročník' : option === 'grade2' ? '2. ročník' : option === 'grade3' ? '3. ročník' : option === 'grade4' ? '4. ročník' : '5. ročník'}
