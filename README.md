@@ -12,7 +12,7 @@ Rodič si vie v nastaveniach vyklikať témy, ktoré chce, aby dieťa trénovalo
 
 Aplikácia je voľne k dispozícii. Ktokoľvek môže kód používať, upravovať a prispôsobiť si ho pre vlastné potreby.
 
-Projekt je vytváraný pomocou AI asistencie.
+Projekt je vytváraný pomocou AI, štýlom vibe coding.
 
 Ahoj! 👋
 Toto je zdrojový kód našej hry **Matematik**.
