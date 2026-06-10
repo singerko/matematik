@@ -1314,36 +1314,37 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                             )}
                                         </div>
                                     )}
-                                    <div
-                                        style={{
-                                            minWidth: '160px',
-                                            display: 'inline-flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            gap: '0.2rem',
-                                            padding: '0.75rem 1.1rem',
-                                            borderRadius: '0.8rem',
-                                            border: status === 'CORRECT'
-                                                ? '2px solid rgba(34,197,94,0.75)'
-                                                : status === 'WRONG'
-                                                    ? '2px solid rgba(239,68,68,0.75)'
-                                                    : '2px solid rgba(96,165,250,0.45)',
-                                            background: status === 'CORRECT'
-                                                ? 'rgba(34,197,94,0.14)'
-                                                : status === 'WRONG'
-                                                    ? 'rgba(239,68,68,0.14)'
-                                                    : 'rgba(15,23,42,0.78)',
-                                            boxShadow: '0 10px 28px rgba(0,0,0,0.18)',
-                                            opacity: (guidedWarmup && !guidedWarmup.solved) || (expectedWordOperation && selectedWordOperation !== expectedWordOperation) ? 0.55 : 1,
-                                        }}
-                                    >
-                                        <div style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0 }}>
-                                            Tvoja odpoveď
+                                    {(!guidedWarmup || guidedWarmup.solved) && (!expectedWordOperation || selectedWordOperation === expectedWordOperation) && (
+                                        <div
+                                            style={{
+                                                minWidth: '160px',
+                                                display: 'inline-flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                gap: '0.2rem',
+                                                padding: '0.75rem 1.1rem',
+                                                borderRadius: '0.8rem',
+                                                border: status === 'CORRECT'
+                                                    ? '2px solid rgba(34,197,94,0.75)'
+                                                    : status === 'WRONG'
+                                                        ? '2px solid rgba(239,68,68,0.75)'
+                                                        : '2px solid rgba(96,165,250,0.45)',
+                                                background: status === 'CORRECT'
+                                                    ? 'rgba(34,197,94,0.14)'
+                                                    : status === 'WRONG'
+                                                        ? 'rgba(239,68,68,0.14)'
+                                                        : 'rgba(15,23,42,0.78)',
+                                                boxShadow: '0 10px 28px rgba(0,0,0,0.18)',
+                                            }}
+                                        >
+                                            <div style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0 }}>
+                                                Tvoja odpoveď
+                                            </div>
+                                            <div style={{ color: '#f8fafc', fontSize: '2.2rem', fontWeight: 900, fontFamily: 'monospace', lineHeight: 1 }}>
+                                                {inputValue || '?'}
+                                            </div>
                                         </div>
-                                        <div style={{ color: '#f8fafc', fontSize: '2.2rem', fontWeight: 900, fontFamily: 'monospace', lineHeight: 1 }}>
-                                            {inputValue || '?'}
-                                        </div>
-                                    </div>
+                                    )}
                                     {isSolvingWordIntermediate && (
                                         <div style={{ color: '#cbd5e1', fontSize: '0.9rem', marginTop: '0.5rem' }}>
                                             Teraz zadávaš medzivýsledok prvého kroku.
