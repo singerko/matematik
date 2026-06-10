@@ -1,5 +1,13 @@
 # Matematik - Aplikácia na počítanie
 
+## O projekte
+
+Túto aplikáciu vytváram pre svoje deti, ktoré sa učia na základnej škole. Úlohy a témy pridávam priebežne podľa toho, čo sa deti práve učia v škole, aby si mohli doma cielene precvičiť aktuálne učivo.
+
+Aplikácia beží ako webová služba aj ako mobilná aplikácia pre Android. Android verzia má aj hlasový výstup a vie žiaka naviesť na správne riešenie, keď sa pomýli alebo potrebuje vysvetlenie postupu.
+
+Rodič si vie v nastaveniach vyklikať témy, ktoré chce, aby dieťa trénovalo. Potom nastaví počet príkladov a klikne na štart. Niektoré témy majú aj doplnkové konfigurácie, napríklad výber konkrétnych podtém alebo rozsahov. Do aplikácie sa snažím pridávať aj zábavnejšie hry a režimy, aby tréning nebol len jednoduché zadanie, výsledok a ďalší príklad.
+
 Ahoj! 👋
 Toto je zdrojový kód našej hry **Matematik**.
 V tejto hre si môžeš precvičovať sčítanie, odčítanie, násobenie a delenie.
