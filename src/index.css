@@ -1,0 +1,310 @@
+@font-face {
+  font-family: 'Syne';
+  src: url('/fonts/syne_regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Syne';
+  src: url('/fonts/syne_extrabold.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg-color: #0f172a;
+  --text-color: #f8fafc;
+  --brand-singer: #f0f0ee;
+  --brand-land: #6bb800;
+  --text-secondary: #94a3b8;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --secondary: #64748b;
+  --accent: #8b5cf6;
+  --success: #22c55e;
+  --error: #ef4444;
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --input-bg: rgba(15, 23, 42, 0.5);
+  --border: rgba(148, 163, 184, 0.1);
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --radius: 1rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 1rem;
+  padding-top: max(env(safe-area-inset-top), 1rem);
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  padding-left: max(env(safe-area-inset-left), 1rem);
+  padding-right: max(env(safe-area-inset-right), 1rem);
+  height: 100dvh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-container {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Utilities */
+.glass {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Keypad */
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.keypad-btn {
+  background: rgba(255, 255, 255, 0.1);
+  /* Lighter Glass to match Settings */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  /* Subtle border for definition */
+  color: #f8fafc;
+  font-size: 1.75rem;
+  font-weight: 700;
+  border-radius: 1rem;
+  transition: all 0.1s;
+  /* Flex centering */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 4rem;
+  /* Enforce consistent height */
+  width: 100%;
+  /* Fill grid cell */
+}
+
+.keypad-btn:active {
+  background: rgba(255, 255, 255, 0.2);
+  /* Lighter on press */
+  transform: scale(0.96);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  font-size: 1rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  background: rgba(15, 23, 42, 0.8);
+  /* Darker, less transparent background */
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  /* Higher contrast border */
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: var(--primary);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+input[type=checkbox] {
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+/* Hide number input spinners */
+.input::-webkit-outer-spin-button,
+.input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.card {
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  box-sizing: border-box;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+/* Typography */
+h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(to right, #60a5fa, #c084fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0 0 1rem 0;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #e2e8f0;
+  /* Lighter color for better contrast against dark bg */
+}
+
+@media (max-width: 480px) {
+  #root {
+    padding-top: max(env(safe-area-inset-top), 0.5rem);
+    padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+    padding-left: max(env(safe-area-inset-left), 0.75rem);
+    padding-right: max(env(safe-area-inset-right), 0.75rem);
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  .btn {
+    padding: 0.7rem 0.9rem;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+
+  .game-session > .w-full:first-child {
+    padding: 0.35rem 0.25rem;
+  }
+
+  .game-session .keypad-grid {
+    gap: 0.45rem;
+    margin-top: 0.55rem;
+  }
+
+  .game-session .keypad-btn {
+    height: 3.05rem;
+    border-radius: 0.75rem;
+    font-size: 1.35rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .game-session .keypad-grid {
+    gap: 0.4rem;
+    margin-top: 0.45rem;
+  }
+
+  .game-session .keypad-btn {
+    height: 2.85rem;
+    font-size: 1.25rem;
+  }
+
+  .game-session .btn {
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+}

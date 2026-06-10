@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Matematik</string>
+    <string name="title_activity_main">Matematik</string>
+    <string name="package_name">com.matematik.app</string>
+    <string name="custom_url_scheme">com.matematik.app</string>
+</resources>
