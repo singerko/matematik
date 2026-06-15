@@ -18,10 +18,23 @@ const formatDate = (value: string) => {
     return date.toLocaleDateString('sk-SK');
 };
 
+const formatDateTime = (value: string) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('sk-SK', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
 const ProgressDashboard: React.FC<Props> = ({ profile, onBack, onPracticeTopic, onResetProgress, onPracticeDiary }) => {
     const topics = getAllProgressTopics(profile.progress);
     const hardProblems = profile.progress?.hardProblems ?? [];
     const commonErrors = getMostCommonErrorDiagnoses(profile.progress);
+    const sessionHistory = profile.progress?.sessionHistory ?? [];
 
     return (
         <div className="flex flex-col gap-4" style={{ maxWidth: '760px', margin: '0 auto', paddingBottom: '2rem' }}>
@@ -119,6 +132,61 @@ const ProgressDashboard: React.FC<Props> = ({ profile, onBack, onPracticeTopic, 
                                 <div style={{ fontWeight: 800, color: '#facc15' }}>{error.attempts}x</div>
                             </div>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {sessionHistory.length > 0 && (
+                <div className="glass card">
+                    <div style={{ fontWeight: 800, marginBottom: '0.75rem' }}>Posledné počítania</div>
+                    <div className="flex flex-col gap-2">
+                        {sessionHistory.map(session => {
+                            const accuracy = session.totalProblems === 0
+                                ? 0
+                                : Math.round((session.correctProblems / session.totalProblems) * 100);
+
+                            return (
+                                <details
+                                    key={session.id}
+                                    style={{
+                                        padding: '0.75rem',
+                                        borderRadius: '0.75rem',
+                                        background: 'rgba(255,255,255,0.06)',
+                                    }}
+                                >
+                                    <summary style={{ cursor: 'pointer', fontWeight: 800 }}>
+                                        {formatDateTime(session.completedAt)} · {session.totalProblems} príkladov · {session.correctProblems}/{session.totalProblems} správne ({accuracy}%)
+                                    </summary>
+                                    <div className="flex flex-col gap-2" style={{ marginTop: '0.75rem' }}>
+                                        {session.results.map((result, index) => (
+                                            <div
+                                                key={`${session.id}-${index}`}
+                                                style={{
+                                                    display: 'grid',
+                                                    gridTemplateColumns: '1fr auto',
+                                                    gap: '0.75rem',
+                                                    alignItems: 'center',
+                                                    padding: '0.65rem',
+                                                    borderRadius: '0.6rem',
+                                                    background: result.correct ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                                                    border: result.correct ? '1px solid rgba(34,197,94,0.16)' : '1px solid rgba(239,68,68,0.16)',
+                                                }}
+                                            >
+                                                <div>
+                                                    <div style={{ fontWeight: 800 }}>{result.problem.expression}</div>
+                                                    <div style={{ color: '#cbd5e1', fontSize: '0.9rem' }}>
+                                                        Odpoveď: {String(result.userAnswer)}
+                                                    </div>
+                                                </div>
+                                                <div style={{ fontWeight: 900, color: result.correct ? '#22c55e' : '#f87171' }}>
+                                                    {result.correct ? 'správne' : 'chyba'}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </details>
+                            );
+                        })}
                     </div>
                 </div>
             )}

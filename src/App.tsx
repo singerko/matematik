@@ -78,6 +78,15 @@ function App() {
     setScreen('SETTINGS');
   };
 
+  const handleRequestGameExit = useCallback(() => {
+    const shouldExit = window.confirm('Naozaj chceš ukončiť počítanie? Rozpracované príklady sa stratia.');
+    if (!shouldExit) return;
+
+    setInitialProblems([]);
+    setGameSettings(null);
+    setScreen('SETTINGS');
+  }, []);
+
   const handlePracticeRecommended = (results: TrainingResult[]) => {
     const recommendedProblems = currentProfile
       ? createRecommendedProblemsFromRecentAndProgress(results, currentProfile.progress)
@@ -152,7 +161,7 @@ function App() {
 
   const handleBack = useCallback(() => {
     if (screen === 'GAME') {
-      setScreen('SETTINGS');
+      handleRequestGameExit();
       return;
     }
     if (screen === 'SETTINGS') {
@@ -183,7 +192,7 @@ function App() {
     }
     // PROFILE — ukončiť aplikáciu
     CapApp.exitApp();
-  }, [screen]);
+  }, [handleRequestGameExit, screen]);
 
   useEffect(() => {
     CapApp.addListener('backButton', handleBack);
@@ -220,7 +229,7 @@ function App() {
         </header>
       )}
 
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: screen === 'GAME' ? 'hidden' : 'auto' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
         <Suspense fallback={<div style={{ padding: '1rem', color: '#94a3b8' }}>Načítavam...</div>}>
           {screen === 'PROFILE' && (
             <ProfileSelector onSelect={handleProfileSelect} />
@@ -246,7 +255,7 @@ function App() {
                 settings={activeGameSettings ?? currentProfile.settings}
                 totalProblems={problemCount || activeGameSettings?.problemCount || 10}
                 onComplete={handleGameComplete}
-                onExit={handleBackToMenu}
+                onExit={handleRequestGameExit}
               />
             ) : (
               <GameSession
@@ -254,7 +263,7 @@ function App() {
                 totalProblems={problemCount || activeGameSettings?.problemCount || 10}
                 initialProblems={initialProblems}
                 onComplete={handleGameComplete}
-                onExit={handleBackToMenu}
+                onExit={handleRequestGameExit}
               />
             )
           )}

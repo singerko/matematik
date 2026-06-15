@@ -282,6 +282,14 @@ export interface TrainingResult {
     diagnosisTitle?: string;
 }
 
+export interface TrainingSessionHistoryItem {
+    id: string;
+    completedAt: string;
+    totalProblems: number;
+    correctProblems: number;
+    results: TrainingResult[];
+}
+
 export interface TopicProgress {
     attempts: number;
     correct: number;
@@ -326,6 +334,7 @@ export interface ProfileProgress {
     errorDiagnoses?: Record<string, ErrorDiagnosisStats>;
     sessionsCompleted: number;
     lastSessionAt?: string;
+    sessionHistory?: TrainingSessionHistoryItem[];
     hardProblems?: Problem[]; // Problems to revisit
     bestStreak?: number;
     totalStars?: number;

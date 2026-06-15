@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { type Constraints, type ErrorDiagnosisCode, type Problem, type TrainingResult } from '../lib/types';
 import { generateProblem } from '../lib/generator';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XCircle, CheckCircle, ArrowRight, CornerDownLeft, Delete } from 'lucide-react';
+import { XCircle, CheckCircle, ArrowRight, CornerDownLeft, Delete, Calculator, X, RotateCcw } from 'lucide-react';
 import VisualExplanation from './VisualExplanation';
 import GuidedCorrectionVisual from './GuidedCorrectionVisual';
 import { diagnoseAnswerDetailed, explainProblem, isAnswerCorrect, toNumericAnswer } from '../lib/explanations';
@@ -42,6 +42,196 @@ const isYesNoProblem = (problem: Problem) => problem.expression.includes('1=áno
 const isFirstSecondProblem = (problem: Problem) => problem.expression.includes('1=prvý, 0=druhý');
 const isLogicalSequenceProblem = (problem: Problem) => problem.metadata?.type === 'logical_sequence';
 const isRomanTextAnswerProblem = (problem: Problem) => getProblemMetadata(problem)?.type === 'arabic_to_roman';
+
+type ScratchOperation = '+' | '-' | '×' | '÷';
+type ScratchLine = 'top' | 'bottom' | 'carry' | 'result';
+
+interface ScratchPadState {
+    operation: ScratchOperation;
+    top: string;
+    bottom: string;
+    carry: string;
+    result: string;
+    activeLine: ScratchLine;
+}
+
+const createEmptyScratchPad = (): ScratchPadState => ({
+    operation: '+',
+    top: '',
+    bottom: '',
+    carry: '',
+    result: '',
+    activeLine: 'top',
+});
+
+const scratchLineLabels: Record<ScratchLine, string> = {
+    top: 'horné číslo',
+    bottom: 'dolné číslo',
+    carry: 'pomocný riadok',
+    result: 'výsledok',
+};
+
+const formatScratchDigits = (value: string, width: number) => {
+    const chars = value.split('');
+    const padding = Math.max(0, width - chars.length);
+    return [
+        ...Array.from({ length: padding }, (_, index) => <span key={`pad-${index}`} className="scratch-cell scratch-cell-empty" />),
+        ...chars.map((char, index) => <span key={`${char}-${index}`} className="scratch-cell">{char}</span>),
+    ];
+};
+
+const MathScratchPad: React.FC<{
+    value: ScratchPadState;
+    onChange: React.Dispatch<React.SetStateAction<ScratchPadState>>;
+    onClose: () => void;
+}> = ({ value, onChange, onClose }) => {
+    const isVertical = value.operation !== '÷';
+    const width = Math.max(3, value.top.length, value.bottom.length + 1, value.carry.length, value.result.length);
+    const appendDigit = (digit: string) => {
+        onChange(prev => {
+            const current = prev[prev.activeLine];
+            const nextValue = prev.activeLine === 'result' && prev.operation !== '÷'
+                ? `${digit}${current}`.slice(0, 10)
+                : `${current}${digit}`.slice(0, 10);
+            return { ...prev, [prev.activeLine]: nextValue };
+        });
+    };
+    const deleteDigit = () => {
+        onChange(prev => {
+            const current = prev[prev.activeLine];
+            const nextValue = prev.activeLine === 'result' && prev.operation !== '÷'
+                ? current.slice(1)
+                : current.slice(0, -1);
+            return { ...prev, [prev.activeLine]: nextValue };
+        });
+    };
+
+    return (
+        <div className="scratch-overlay" role="dialog" aria-modal="true" aria-label="Matematická plocha">
+            <div className="scratch-panel">
+                <div className="scratch-header">
+                    <div>
+                        <div className="scratch-title">Matematická plocha</div>
+                        <div className="scratch-subtitle">{scratchLineLabels[value.activeLine]}</div>
+                    </div>
+                    <div className="scratch-actions">
+                        <button
+                            type="button"
+                            className="scratch-icon-btn"
+                            aria-label="Vymazať plochu"
+                            onClick={() => onChange(createEmptyScratchPad())}
+                        >
+                            <RotateCcw size={18} />
+                        </button>
+                        <button type="button" className="scratch-icon-btn" aria-label="Zavrieť plochu" onClick={onClose}>
+                            <X size={20} />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="scratch-ops" role="group" aria-label="Operácia">
+                    {(['+', '-', '×', '÷'] as ScratchOperation[]).map(operation => (
+                        <button
+                            key={operation}
+                            type="button"
+                            className={`scratch-op ${value.operation === operation ? 'scratch-op-active' : ''}`}
+                            onClick={() => onChange(prev => ({ ...prev, operation }))}
+                        >
+                            {operation}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="scratch-paper">
+                    {isVertical ? (
+                        <div className="scratch-vertical" style={{ ['--scratch-cols' as string]: width }}>
+                            <button
+                                type="button"
+                                className={`scratch-row scratch-row-carry ${value.activeLine === 'carry' ? 'scratch-row-active' : ''}`}
+                                onClick={() => onChange(prev => ({ ...prev, activeLine: 'carry' }))}
+                            >
+                                <span className="scratch-op-slot" />
+                                <span className="scratch-digits">{formatScratchDigits(value.carry, width)}</span>
+                            </button>
+                            <button
+                                type="button"
+                                className={`scratch-row ${value.activeLine === 'top' ? 'scratch-row-active' : ''}`}
+                                onClick={() => onChange(prev => ({ ...prev, activeLine: 'top' }))}
+                            >
+                                <span className="scratch-op-slot" />
+                                <span className="scratch-digits">{formatScratchDigits(value.top, width)}</span>
+                            </button>
+                            <button
+                                type="button"
+                                className={`scratch-row ${value.activeLine === 'bottom' ? 'scratch-row-active' : ''}`}
+                                onClick={() => onChange(prev => ({ ...prev, activeLine: 'bottom' }))}
+                            >
+                                <span className="scratch-op-slot">{value.operation}</span>
+                                <span className="scratch-digits">{formatScratchDigits(value.bottom, width)}</span>
+                            </button>
+                            <div className="scratch-line" />
+                            <button
+                                type="button"
+                                className={`scratch-row scratch-row-result ${value.activeLine === 'result' ? 'scratch-row-active' : ''}`}
+                                onClick={() => onChange(prev => ({ ...prev, activeLine: 'result' }))}
+                            >
+                                <span className="scratch-op-slot" />
+                                <span className="scratch-digits">{formatScratchDigits(value.result, width)}</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="scratch-division">
+                            <button
+                                type="button"
+                                className={`scratch-inline-number ${value.activeLine === 'top' ? 'scratch-row-active' : ''}`}
+                                onClick={() => onChange(prev => ({ ...prev, activeLine: 'top' }))}
+                            >
+                                {value.top || '?'}
+                            </button>
+                            <span>÷</span>
+                            <button
+                                type="button"
+                                className={`scratch-inline-number ${value.activeLine === 'bottom' ? 'scratch-row-active' : ''}`}
+                                onClick={() => onChange(prev => ({ ...prev, activeLine: 'bottom' }))}
+                            >
+                                {value.bottom || '?'}
+                            </button>
+                            <span>=</span>
+                            <button
+                                type="button"
+                                className={`scratch-inline-number ${value.activeLine === 'result' ? 'scratch-row-active' : ''}`}
+                                onClick={() => onChange(prev => ({ ...prev, activeLine: 'result' }))}
+                            >
+                                {value.result || '?'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                <div className="scratch-keypad">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit => (
+                        <button key={digit} type="button" className="scratch-key" onClick={() => appendDigit(String(digit))}>
+                            {digit}
+                        </button>
+                    ))}
+                    <button type="button" className="scratch-key scratch-key-muted" onClick={deleteDigit}>
+                        <Delete size={20} />
+                    </button>
+                    <button type="button" className="scratch-key" onClick={() => appendDigit('0')}>
+                        0
+                    </button>
+                    <button
+                        type="button"
+                        className="scratch-key scratch-key-muted"
+                        onClick={() => onChange(prev => ({ ...prev, [prev.activeLine]: '' }))}
+                    >
+                        C
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const IndianDivisionDisplay: React.FC<{ problem: Problem; stepIndex: number }> = ({ problem, stepIndex }) => {
     const indian = problem.indianDivision!;
@@ -205,20 +395,22 @@ const LongDivisionDisplay: React.FC<{ problem: Problem; stepIndex: number }> = (
     );
 };
 
-const LargeMultiplicationDisplay: React.FC<{ problem: Problem; stepIndex: number }> = ({ problem, stepIndex }) => {
+const LargeMultiplicationDisplay: React.FC<{ problem: Problem; stepIndex: number; carryInput: string }> = ({ problem, stepIndex, carryInput }) => {
     const data = problem.largeMultiplication!;
     const multiplicandDigits = data.multiplicand.toString().split('');
     const productDigits = data.product.toString().split('');
     const solvedDigits = data.steps.slice(0, stepIndex).map(step => step.resultDigit.toString());
     const currentStep = data.steps[stepIndex] ?? data.steps[data.steps.length - 1];
     const activeDigitIndex = multiplicandDigits.length - 1 - currentStep.position;
-    const resultSlots = productDigits.map((_, index) => {
+    const resultSlots = productDigits.map((_, index): { value: string; kind: 'solved' | 'current' | 'carry' | 'empty' } => {
         const productPosition = productDigits.length - 1 - index;
         const solved = solvedDigits[productPosition];
-        if (solved !== undefined) return solved;
-        if (productPosition === currentStep.position) return '?';
-        if (stepIndex === data.steps.length - 1 && productPosition === currentStep.position + 1) return '#';
-        return '';
+        if (solved !== undefined) return { value: solved, kind: 'solved' };
+        if (productPosition === currentStep.position) return { value: '?', kind: 'current' };
+        if (stepIndex === data.steps.length - 1 && productPosition === currentStep.position + 1) {
+            return { value: carryInput || '#', kind: 'carry' };
+        }
+        return { value: '', kind: 'empty' };
     });
 
     return (
@@ -244,16 +436,16 @@ const LargeMultiplicationDisplay: React.FC<{ problem: Problem; stepIndex: number
                 <div />
                 <div style={{ gridColumn: `span ${productDigits.length}`, borderTop: '2px solid white', height: '0.35rem' }} />
                 <div />
-                {resultSlots.map((digit, index) => (
-                    <div key={`res-${index}`} style={{ fontSize: '2rem', fontWeight: 800, color: digit === '?' || digit === '#' ? '#93c5fd' : '#22c55e' }}>
-                        {digit}
+                {resultSlots.map((slot, index) => (
+                    <div key={`res-${index}`} style={{ fontSize: '2rem', fontWeight: 800, color: slot.kind === 'current' || slot.kind === 'carry' ? '#93c5fd' : '#22c55e' }}>
+                        {slot.value}
                     </div>
                 ))}
             </div>
             <div style={{ color: '#facc15', fontSize: '1.05rem', fontWeight: 700, marginTop: '0.75rem' }}>
                 {currentStep.position === 0
                     ? `Počítaš ${currentStep.digit} × ${data.multiplier}.`
-                    : `Počítaš ${currentStep.digit} × ${data.multiplier} a prenos z minulého stĺpca.`}
+                    : `Počítaš ${currentStep.digit} × ${data.multiplier} a prenos ${carryInput || '#'} z minulého stĺpca.`}
             </div>
         </div>
     );
@@ -290,12 +482,11 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
     const [wordIntermediateSolved, setWordIntermediateSolved] = useState(false);
     const [wordIntermediateError, setWordIntermediateError] = useState(false);
     const [streak, setStreak] = useState(0);
+    const [scratchPadOpen, setScratchPadOpen] = useState(false);
+    const [scratchPad, setScratchPad] = useState<ScratchPadState>(() => createEmptyScratchPad());
     const trainingMode = settings.trainingMode ?? 'learn';
     const isLightningMode = trainingMode === 'lightning';
     const isTestMode = trainingMode === 'test' || isLightningMode;
-    const diagnosticsText = settings.schoolTopics?.length
-        ? `Témy: ${settings.schoolTopics.join(', ')}`
-        : 'Témy: všeobecné';
     const LIGHTNING_TIME = 10;
     const [timeLeft, setTimeLeft] = useState(LIGHTNING_TIME);
 
@@ -380,6 +571,8 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
         setWordOperationError(false);
         setWordIntermediateSolved(false);
         setWordIntermediateError(false);
+        setScratchPadOpen(false);
+        setScratchPad(createEmptyScratchPad());
         setTimeLeft(LIGHTNING_TIME);
     }, [currentIndex]);
 
@@ -1032,6 +1225,8 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
             setWordOperationError(false);
             setWordIntermediateSolved(false);
             setWordIntermediateError(false);
+            setScratchPadOpen(false);
+            setScratchPad(createEmptyScratchPad());
             setCurrentIndex(prev => prev + 1);
             return;
         }
@@ -1065,9 +1260,6 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                 <button onClick={onExit} className="btn-sm text-gray-400">Ukončiť</button>
                 <div className="flex flex-col items-center">
                     <div className="text-xl font-bold">{currentIndex + 1} / {problems.length || totalProblems}</div>
-                    <div style={{ color: '#94a3b8', fontSize: '0.7rem', marginTop: '0.1rem' }}>
-                        {diagnosticsText}
-                    </div>
                     {isLightningMode && (
                         <div className="w-24 h-1.5 bg-gray-700 rounded-full mt-1 overflow-hidden">
                             <motion.div
@@ -1079,33 +1271,32 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                         </div>
                     )}
                 </div>
-                <div style={{ width: '40px' }}></div>
+                <button
+                    type="button"
+                    className="btn-sm text-gray-400 math-pad-trigger"
+                    onClick={() => setScratchPadOpen(true)}
+                    aria-label="Otvoriť matematickú plochu"
+                >
+                    <Calculator size={18} />
+                    <span>Plocha</span>
+                </button>
             </div>
 
-            <div className="flex-1 flex flex-col justify-center items-center w-full">
+            {scratchPadOpen && (
+                <MathScratchPad
+                    value={scratchPad}
+                    onChange={setScratchPad}
+                    onClose={() => setScratchPadOpen(false)}
+                />
+            )}
+
+            <div className="game-stage flex-1 flex flex-col justify-center items-center w-full">
                 <motion.div
                     key={currentProblem.id}
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     className="text-center w-full"
                 >
-                    {settings.schoolTopics?.length === 1 && (
-                        <div
-                            style={{
-                                display: 'inline-block',
-                                marginBottom: '0.9rem',
-                                padding: '0.35rem 0.7rem',
-                                borderRadius: '0.5rem',
-                                background: 'rgba(59,130,246,0.18)',
-                                border: '1px solid rgba(147,197,253,0.35)',
-                                color: '#bfdbfe',
-                                fontSize: '0.82rem',
-                                fontWeight: 700,
-                            }}
-                        >
-                            {diagnosticsText}
-                        </div>
-                    )}
                     {currentProblem.isAdaptiveFollowUp && (
                         <div style={{ color: '#facc15', fontWeight: 700, marginBottom: '0.75rem' }}>
                             Krátke zopakovanie po chybe
@@ -1113,7 +1304,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                     )}
                     {largeMultiplicationData ? (
                         <>
-                            <LargeMultiplicationDisplay problem={currentProblem} stepIndex={largeMulStepIndex} />
+                            <LargeMultiplicationDisplay problem={currentProblem} stepIndex={largeMulStepIndex} carryInput={largeMulCarryInput} />
                             <div className="flex justify-center gap-3 mt-6" style={{ flexWrap: 'wrap' }}>
                                 <button
                                     type="button"
@@ -1456,7 +1647,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
             </div>
 
             {isLogicalSequenceProblem(currentProblem) && effectiveDirectAnswers ? (
-                <div className="flex gap-4 w-full flex-wrap justify-center" style={{ maxWidth: '600px', marginTop: '1rem' }}>
+                <div className="game-keypad flex gap-4 w-full flex-wrap justify-center" style={{ maxWidth: '600px', marginTop: '1rem' }}>
                     {effectiveDirectAnswers.map((opt, i) => (
                         <button
                             key={i}
@@ -1469,7 +1660,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                     ))}
                 </div>
             ) : (isYesNoProblem(currentProblem) || isFirstSecondProblem(currentProblem)) && !stepDivisionData && !largeMultiplicationData ? (
-                <div className="flex gap-4 w-full" style={{ maxWidth: '400px', marginTop: '1rem' }}>
+                <div className="game-keypad flex gap-4 w-full" style={{ maxWidth: '400px', marginTop: '1rem' }}>
                     <button
                         className="btn btn-primary w-full text-xl"
                         style={{ height: '4rem' }}
@@ -1486,7 +1677,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                     </button>
                 </div>
             ) : needsRomanTextAnswer ? (
-                <div className="keypad-grid" style={{ maxWidth: '400px' }}>
+                <div className="game-keypad keypad-grid" style={{ maxWidth: '400px' }}>
                     {['I', 'V', 'X', 'L', 'C'].map(letter => (
                         <button
                             key={letter}
@@ -1504,49 +1695,69 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                         Zmaž
                     </button>
                     <button
-                        className="btn btn-primary col-span-2 text-xl"
-                        style={{ height: '4rem' }}
+                        className="btn btn-primary keypad-btn keypad-submit col-span-2"
                         onClick={() => handleInput('ENTER')}
                     >
                         Potvrdiť <CornerDownLeft className="ml-2" />
                     </button>
                 </div>
             ) : (
-                <div className="keypad-grid" style={{ maxWidth: '400px' }}>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, stepDivisionData || largeMultiplicationData ? '' : '-', 0].map(k => (
-                    <button
-                        key={`${k || 'blank'}`}
-                        className="btn keypad-btn"
-                        onClick={() => k !== '' && handleInput(k.toString())}
-                        disabled={k === ''}
-                        style={k === '' ? { opacity: 0.2 } : undefined}
-                    >
-                        {k}
-                    </button>
-                ))}
-                <button className="btn keypad-btn text-red-400" onClick={() => handleInput('DEL')}>
-                    <Delete size={24} />
-                </button>
-                {largeMultiplicationData ? (
-                    <button className="btn keypad-btn" onClick={() => setLargeMulActiveField(prev => prev === 'digit' ? 'carry' : 'digit')}>
-                        {largeMulActiveField === 'digit' ? 'pren' : 'cif'}
-                    </button>
-                ) : stepDivisionData ? (
-                    <button className="btn keypad-btn" onClick={() => setIndianActiveField(prev => prev === 'quotient' ? 'remainder' : 'quotient')}>
-                        {indianActiveField === 'quotient' ? (isLongDivision ? 'zv' : '#') : (isLongDivision ? 'cif' : '?')}
-                    </button>
-                ) : (
-                    <button className="btn keypad-btn" onClick={() => handleInput('.')}>
-                        .
-                    </button>
-                )}
-                <button
-                    className="btn btn-primary col-span-2 text-xl"
-                    style={{ height: '4rem' }}
-                    onClick={() => handleInput('ENTER')}
-                >
-                    Potvrdiť <CornerDownLeft className="ml-2" />
-                </button>
+                <div className="game-keypad keypad-grid" style={{ maxWidth: '400px' }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(k => (
+                        <button
+                            key={k}
+                            className="btn keypad-btn"
+                            onClick={() => handleInput(k.toString())}
+                        >
+                            {k}
+                        </button>
+                    ))}
+                    {stepDivisionData || largeMultiplicationData ? (
+                        <>
+                            <button className="btn keypad-btn text-red-400" onClick={() => handleInput('DEL')}>
+                                <Delete size={24} />
+                            </button>
+                            <button className="btn keypad-btn" onClick={() => handleInput('0')}>
+                                0
+                            </button>
+                            {largeMultiplicationData ? (
+                                <button className="btn keypad-btn" onClick={() => setLargeMulActiveField(prev => prev === 'digit' ? 'carry' : 'digit')}>
+                                    {largeMulActiveField === 'digit' ? 'pren' : 'cif'}
+                                </button>
+                            ) : (
+                                <button className="btn keypad-btn" onClick={() => setIndianActiveField(prev => prev === 'quotient' ? 'remainder' : 'quotient')}>
+                                    {indianActiveField === 'quotient' ? (isLongDivision ? 'zv' : '#') : (isLongDivision ? 'cif' : '?')}
+                                </button>
+                            )}
+                            <button
+                                className="btn btn-primary keypad-btn keypad-submit col-span-3"
+                                onClick={() => handleInput('ENTER')}
+                            >
+                                Potvrdiť <CornerDownLeft className="ml-2" />
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button className="btn keypad-btn" onClick={() => handleInput('-')}>
+                                -
+                            </button>
+                            <button className="btn keypad-btn" onClick={() => handleInput('0')}>
+                                0
+                            </button>
+                            <button className="btn keypad-btn text-red-400" onClick={() => handleInput('DEL')}>
+                                <Delete size={24} />
+                            </button>
+                            <button className="btn keypad-btn" onClick={() => handleInput('.')}>
+                                .
+                            </button>
+                            <button
+                                className="btn btn-primary keypad-btn keypad-submit col-span-2"
+                                onClick={() => handleInput('ENTER')}
+                            >
+                                Potvrdiť <CornerDownLeft className="ml-2" />
+                            </button>
+                        </>
+                    )}
                 </div>
             )}
         </div>

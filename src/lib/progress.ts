@@ -117,6 +117,16 @@ export const updateProfileProgress = (profile: Profile, results: TrainingResult[
     const sessionStreak = computeBestStreak(results);
     const previousBestStreak = progress.bestStreak ?? 0;
     const previousTotalStars = progress.totalStars ?? 0;
+    const sessionHistory = [
+        {
+            id: uniqueId(),
+            completedAt: now,
+            totalProblems: results.length,
+            correctProblems: results.filter(result => result.correct).length,
+            results,
+        },
+        ...(progress.sessionHistory ?? []),
+    ].slice(0, 10);
 
     return {
         ...profile,
@@ -125,6 +135,7 @@ export const updateProfileProgress = (profile: Profile, results: TrainingResult[
             errorDiagnoses,
             sessionsCompleted: progress.sessionsCompleted + 1,
             lastSessionAt: now,
+            sessionHistory,
             bestStreak: Math.max(previousBestStreak, sessionStreak),
             totalStars: previousTotalStars + sessionStars,
             lastSessionStars: sessionStars,
