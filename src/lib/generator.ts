@@ -1206,13 +1206,26 @@ const generateSingleOperationProblem = (settings: Constraints): Problem => {
                 : undefined;
             const maxOperand = settings.maxMulOperand ?? settings.maxOneNumberInMul;
             const tableLimit = settings.schoolGrade === 'grade4' ? Math.min(10, maxOperand) : maxOperand;
-            const left = tables?.length ? randomChoice(tables) : randomInt(1, tableLimit);
-            const right = randomInt(1, tableLimit);
+            const tableOperand = tables?.length ? randomChoice(tables) : null;
+            const otherOperand = randomInt(1, tableLimit);
+            const shouldSwapTableOperand = tableOperand !== null && Math.random() < 0.5;
+            const left = tableOperand === null
+                ? randomInt(1, tableLimit)
+                : shouldSwapTableOperand
+                    ? otherOperand
+                    : tableOperand;
+            const right = tableOperand === null
+                ? otherOperand
+                : shouldSwapTableOperand
+                    ? tableOperand
+                    : otherOperand;
             const result = left * right;
 
             if (result > settings.maxMulProduct) continue;
             if (generateMissing) {
-                const hideLeft = Math.random() < 0.5;
+                const hideLeft = tableOperand === null
+                    ? Math.random() < 0.5
+                    : left !== tableOperand;
                 return createProblem(
                     hideLeft ? `? * ${right} = ${result}` : `${left} * ? = ${result}`,
                     hideLeft ? left : right,

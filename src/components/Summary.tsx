@@ -13,6 +13,7 @@ import { explainProblem, getDiagnosisLabel, getProblemTopic, getTopicLabel } fro
 import { computeBestStreak, computeStars } from '../lib/progress';
 import { speakText } from '../lib/speech';
 import { getProblemMetadata } from '../lib/problemMetadata';
+import CelebrationEffect, { type CelebrationVariant } from './CelebrationEffect';
 
 interface Props {
     results: TrainingResult[]; // Zoznam všetkých tvojich odpovedí.
@@ -39,6 +40,15 @@ const Summary: React.FC<Props> = ({ results, onBack, onPracticeRecommended }) =>
 
     const stars = computeStars(results);
     const streak = computeBestStreak(results);
+    const celebrationVariant: CelebrationVariant | null = percentage === 100
+        ? total === 10
+            ? 'hearts'
+            : total === 20
+                ? 'confetti'
+                : total === 50
+                    ? 'fireworks'
+                    : null
+        : null;
     const wrongResults = results.filter(r => !r.correct);
     const wrongTopics = wrongResults.reduce<Record<string, number>>((acc, result) => {
         const topic = getProblemTopic(result.problem);
@@ -83,6 +93,7 @@ const Summary: React.FC<Props> = ({ results, onBack, onPracticeRecommended }) =>
 
     return (
         <div className="flex flex-col items-center p-4 gap-6" style={{ maxWidth: '600px', margin: '0 auto' }}>
+            {celebrationVariant && <CelebrationEffect variant={celebrationVariant} />}
             <div className="text-center mt-8">
                 <Trophy size={64} className="text-yellow-400 mx-auto mb-4" />
                 <h1 className="text-4xl mb-2">Výborná práca!</h1>
