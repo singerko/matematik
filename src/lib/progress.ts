@@ -396,6 +396,45 @@ const recommendedForDiagnosis = (code: ErrorDiagnosisCode): Problem[] => {
                 { ...createProblem('Ktoré rozdelenie kruhu na 3 rovnakých častí je správne?', 0), metadata: { type: 'fraction_equal_parts', parts: 3, options: [[120, 120, 120], [150, 120, 90], [90, 150, 120]], correctIndex: 0 } },
                 { ...createProblem('Ktoré rozdelenie kruhu na 4 rovnakých častí je správne?', 1), metadata: { type: 'fraction_equal_parts', parts: 4, options: [[120, 90, 90, 60], [90, 90, 90, 90], [60, 120, 90, 90]], correctIndex: 1 } },
             ];
+        case 'decimal_fraction':
+            return [
+                { ...createProblem('Zapíš 0,3 ako zlomok.', 0.3), metadata: { type: 'fraction_answer', numerator: 3, denominator: 10, context: 'decimal' } },
+                { ...createProblem('Zapíš 0,7 ako zlomok.', 0.7), metadata: { type: 'fraction_answer', numerator: 7, denominator: 10, context: 'decimal' } },
+                { ...createProblem('Zapíš 7⁄10 ako desatinné číslo.', 0.7), metadata: { type: 'decimal_from_fraction', numerator: 7, denominator: 10, value: 0.7 } },
+                { ...createProblem('Zapíš 1⁄4 ako desatinné číslo.', 0.25), metadata: { type: 'decimal_from_fraction', numerator: 1, denominator: 4, value: 0.25 } },
+            ];
+        case 'decimal_place':
+            return [
+                { ...createProblem('Koľko desatín má číslo 0,7?', 7), metadata: { type: 'decimal_place', value: 0.7, unit: 'desatiny', count: 7, direction: 'to_count' } },
+                { ...createProblem('Zapíš desatinným číslom: tri desatiny.', 0.3), metadata: { type: 'decimal_place', value: 0.3, unit: 'desatiny', count: 3, direction: 'to_decimal' } },
+                { ...createProblem('Koľko stotín má číslo 0,25?', 25), metadata: { type: 'decimal_place', value: 0.25, unit: 'stotiny', count: 25, direction: 'to_count' } },
+            ];
+        case 'decimal_compare':
+            return [
+                { ...createProblem('Ktoré číslo je väčšie: 0,3 alebo 0,25? 1=prvý, 0=druhý', 1), metadata: { type: 'decimal_compare', leftLabel: '0,3', rightLabel: '0,25', leftValue: 0.3, rightValue: 0.25 } },
+                { ...createProblem('Ktoré číslo je väčšie: 1⁄2 alebo 0,4? 1=prvý, 0=druhý', 1), metadata: { type: 'decimal_compare', leftLabel: '1⁄2', rightLabel: '0,4', leftValue: 0.5, rightValue: 0.4 } },
+            ];
+        case 'decimal_order':
+            return [
+                { ...createProblem('Ktoré číslo je najmenšie?', 1), metadata: { type: 'decimal_order', options: [{ label: '0,5', value: 0.5 }, { label: '0,3', value: 0.3 }, { label: '3⁄4', value: 0.75 }], correctIndex: 1, extreme: 'smallest' } },
+                { ...createProblem('Ktoré číslo je najväčšie?', 2), metadata: { type: 'decimal_order', options: [{ label: '0,2', value: 0.2 }, { label: '1⁄4', value: 0.25 }, { label: '0,6', value: 0.6 }], correctIndex: 2, extreme: 'largest' } },
+            ];
+        case 'decimal_sequence':
+            return [
+                { ...createProblem('Pokračuj v rade: 0,6; 0,7; 0,8; ?', 0.9), metadata: { type: 'decimal_sequence', terms: [0.6, 0.7, 0.8], step: 0.1, answer: 0.9 } },
+                { ...createProblem('Pokračuj v rade: 1,5; 1,7; 1,9; ?', 2.1), metadata: { type: 'decimal_sequence', terms: [1.5, 1.7, 1.9], step: 0.2, answer: 2.1 } },
+            ];
+        case 'decimal_number_line':
+            return [
+                { ...createProblem('Aké číslo je na číselnej osi označené šípkou?', 0.3), metadata: { type: 'decimal_number_line', min: 0, max: 1, step: 0.1, mark: 0.3 } },
+                { ...createProblem('Aké číslo je na číselnej osi označené šípkou?', 0.7), metadata: { type: 'decimal_number_line', min: 0, max: 1, step: 0.1, mark: 0.7 } },
+            ];
+        case 'decimal_arithmetic':
+            return [
+                { ...createProblem('0,4 + 0,3', 0.7), metadata: { type: 'decimal_arithmetic', left: 0.4, right: 0.3, op: '+', result: 0.7, context: 'plain' } },
+                { ...createProblem('1,5 − 0,8', 0.7), metadata: { type: 'decimal_arithmetic', left: 1.5, right: 0.8, op: '-', result: 0.7, context: 'plain' } },
+                { ...createProblem('Nákup stojí 3,50 €. Zaplatíš 5 €. Koľko ti vrátia?', 1.5), metadata: { type: 'decimal_arithmetic', left: 5, right: 3.5, op: '-', result: 1.5, context: 'money' } },
+            ];
         case 'number_comparison_choice':
             return [
                 createProblem('Ktoré číslo je väčšie: 48 alebo 52? 1=prvý, 0=druhý', 0),

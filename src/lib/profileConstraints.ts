@@ -65,6 +65,7 @@ export const resolveProfileConstraints = (profile: Profile): Constraints => {
             ...(enabledTopics.includes('divisibility') ? ['/'] as const : []),
             ...(enabledTopics.includes('multiples_divisors') ? ['*', '/'] as const : []),
             ...(enabledTopics.includes('fractions_intro') ? ['+'] as const : []),
+            ...(enabledTopics.includes('decimals_intro') ? ['+'] as const : []),
         ],
         maxNumbers: 2,
         exactOperationCount: 1,

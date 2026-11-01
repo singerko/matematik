@@ -37,6 +37,7 @@ const SCHOOL_TOPIC_LABELS: Record<SchoolTopic, string> = {
     divisibility: 'Deliteľnosť',
     multiples_divisors: 'Násobky a delitele',
     fractions_intro: 'Zlomky',
+    decimals_intro: 'Desatinné čísla',
     number_comparison: 'Porovnávanie čísel',
     rounding: 'Zaokrúhľovanie',
     unit_conversion: 'Premena jednotiek',

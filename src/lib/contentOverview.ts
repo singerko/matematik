@@ -52,10 +52,10 @@ export const GRADE_CONTENT: GradeContentOverview[] = [
     {
         grade: 'grade5',
         label: '5. ročník',
-        goal: 'Prechod k výrazom, deliteľnosti a základom zlomkov.',
+        goal: 'Prechod k výrazom, deliteľnosti, zlomkom a desatinným číslam.',
         sections: [
-            { title: 'Témy', items: ['poradie operácií', 'zátvorky', 'deliteľnosť', 'násobky a delitele', 'úvod do zlomkov', 'zaokrúhľovanie', 'premena jednotiek'] },
-            { title: 'Doučovanie', items: ['vizuálne poradie operácií a zátvorky', 'áno/nie pri deliteľnosti', 'vizuálne násobky, delitele, zlomky a porovnávanie'] },
+            { title: 'Témy', items: ['poradie operácií', 'zátvorky', 'deliteľnosť', 'násobky a delitele', 'úvod do zlomkov', 'desatinné čísla', 'zaokrúhľovanie', 'premena jednotiek'] },
+            { title: 'Doučovanie', items: ['vizuálne poradie operácií a zátvorky', 'áno/nie pri deliteľnosti', 'vizuálne zlomky a porovnávanie', 'desatinné čísla a zlomky'] },
         ],
     },
 ];

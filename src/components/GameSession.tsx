@@ -607,6 +607,35 @@ const FractionCompareBars: React.FC<{ leftNum: number; leftDen: number; rightNum
     );
 };
 
+// Desatinná číselná os so značkou (šípkou) — žiak prečíta hodnotu.
+const DecimalNumberLineView: React.FC<{ min: number; max: number; step: number; mark: number }> = ({ min, max, step, mark }) => {
+    const W = 320;
+    const H = 72;
+    const pad = 22;
+    const axisY = 46;
+    const scale = (v: number) => pad + ((v - min) / (max - min)) * (W - 2 * pad);
+    const ticks: number[] = [];
+    for (let v = min; v <= max + 1e-9; v = Math.round((v + step) * 1000) / 1000) ticks.push(Math.round(v * 1000) / 1000);
+    const fmt = (v: number) => String(Math.round(v * 1000) / 1000).replace('.', ',');
+    const markX = scale(mark);
+    return (
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Číselná os">
+            <line x1={scale(min) - 8} y1={axisY} x2={scale(max) + 8} y2={axisY} stroke="#94a3b8" strokeWidth={2} strokeLinecap="round" />
+            {ticks.map((t, i) => {
+                const isLabeled = i === 0 || i === ticks.length - 1;
+                return (
+                    <g key={i}>
+                        <line x1={scale(t)} y1={axisY - 5} x2={scale(t)} y2={axisY + 5} stroke="#94a3b8" strokeWidth={1.5} />
+                        {isLabeled && <text x={scale(t)} y={axisY + 20} textAnchor="middle" fontSize="12" fill="#cbd5e1" fontWeight="700">{fmt(t)}</text>}
+                    </g>
+                );
+            })}
+            <path d={`M ${markX} ${axisY - 6} L ${markX - 6} ${axisY - 20} L ${markX + 6} ${axisY - 20} Z`} fill="#dc2626" />
+            <line x1={markX} y1={axisY - 6} x2={markX} y2={axisY - 20} stroke="#dc2626" strokeWidth={2} />
+        </svg>
+    );
+};
+
 const FractionAnswerInput: React.FC<{
     numerator: string;
     denominator: string;
@@ -1541,6 +1570,8 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
     const fractionShape = currentMeta?.type === 'fraction_answer' ? currentMeta.shape : undefined;
     const equalPartsMeta = currentMeta?.type === 'fraction_equal_parts' ? currentMeta : null;
     const compareMeta = currentMeta?.type === 'fraction_compare' ? currentMeta : null;
+    const orderMeta = currentMeta?.type === 'decimal_order' ? currentMeta : null;
+    const numberLineMeta = currentMeta?.type === 'decimal_number_line' ? currentMeta : null;
     const isLongDivision = isLongDivisionProblem(currentProblem);
     const expectedWordOperation = getWordProblemOperation(currentProblem);
     const firstIntermediateStep = getFirstIntermediateStep(currentProblem);
@@ -1700,6 +1731,38 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                         {currentProblem.expression}
                                     </div>
                                 </>
+                            ) : orderMeta ? (
+                                <>
+                                    <div style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '1.25rem', lineHeight: 1.25, padding: '0 1rem' }}>
+                                        {currentProblem.expression}
+                                    </div>
+                                    <div className="flex justify-center gap-3" style={{ flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                                        {orderMeta.options.map((option, idx) => {
+                                            const letter = String.fromCharCode(65 + idx);
+                                            const selected = directAnswer?.value === idx;
+                                            const isCorrectOption = idx === orderMeta.correctIndex;
+                                            const showResult = directAnswer != null;
+                                            const background = showResult && selected
+                                                ? isCorrectOption ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.28)'
+                                                : showResult && isCorrectOption
+                                                    ? 'rgba(34,197,94,0.3)'
+                                                    : 'rgba(255,255,255,0.08)';
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    className="btn"
+                                                    style={{ padding: '1rem 1.4rem', borderRadius: '0.9rem', background, display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem', minWidth: '5rem' }}
+                                                    onClick={() => submitDirectAnswer(idx, option.label)}
+                                                    disabled={status !== 'IDLE'}
+                                                >
+                                                    <span style={{ color: '#f8fafc', fontWeight: 900, fontSize: '2rem', lineHeight: 1 }}>{option.label}</span>
+                                                    <span style={{ color: '#93c5fd', fontWeight: 800 }}>{letter})</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </>
                             ) : equalPartsMeta ? (
                                 <>
                                     <div style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '1.25rem', lineHeight: 1.25, padding: '0 1rem' }}>
@@ -1744,6 +1807,11 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                             <FractionCompareBars leftNum={compareMeta.leftNum} leftDen={compareMeta.leftDen} rightNum={compareMeta.rightNum} rightDen={compareMeta.rightDen} />
                                         </div>
                                     )}
+                                    {numberLineMeta && (
+                                        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                                            <DecimalNumberLineView min={numberLineMeta.min} max={numberLineMeta.max} step={numberLineMeta.step} mark={numberLineMeta.mark} />
+                                        </div>
+                                    )}
                                     <div style={{
                                         fontSize: currentProblem.kind === 'word_problem' ? '1.45rem' : currentProblem.expression.length > 15 ? '2rem' : currentProblem.expression.length > 10 ? '2.5rem' : '3.5rem',
                                         fontWeight: 800,
@@ -1756,7 +1824,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                 </>
                             )}
 
-                            {!isYesNoProblem(currentProblem) && !isFirstSecondProblem(currentProblem) && !equalPartsMeta && (
+                            {!isYesNoProblem(currentProblem) && !isFirstSecondProblem(currentProblem) && !equalPartsMeta && !orderMeta && (
                                 <>
                                     {guidedWarmup && (
                                         <div
@@ -2035,7 +2103,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                 </AnimatePresence>
             </div>
 
-            {equalPartsMeta ? null : isLogicalSequenceProblem(currentProblem) && effectiveDirectAnswers ? (
+            {equalPartsMeta || orderMeta ? null : isLogicalSequenceProblem(currentProblem) && effectiveDirectAnswers ? (
                 <div className="game-keypad flex gap-4 w-full flex-wrap justify-center" style={{ maxWidth: '600px', marginTop: '1rem' }}>
                     {logicalVisual
                         ? logicalVisual.options.map((option: VisualSequenceOption) => (

@@ -672,6 +672,7 @@ const generateSchoolTopicProblem = (settings: Constraints): Problem => {
         if (topic === 'divisibility') return true;
         if (topic === 'multiples_divisors') return true;
         if (topic === 'fractions_intro') return true;
+        if (topic === 'decimals_intro') return true;
         if (topic === 'number_comparison') return true;
         if (topic === 'rounding') return true;
         if (topic === 'unit_conversion') return true;
@@ -722,6 +723,10 @@ const generateSchoolTopicProblem = (settings: Constraints): Problem => {
 
     if (topic === 'fractions_intro') {
         return generateFractionIntroProblem();
+    }
+
+    if (topic === 'decimals_intro') {
+        return generateDecimalIntroProblem();
     }
 
     if (topic === 'number_comparison') {
@@ -1102,6 +1107,321 @@ const generateFractionEqualPartsProblem = (): Problem => {
             `Správny je obrázok ${String.fromCharCode(65 + correctIndex)}, kde sú všetky časti rovnaké.`,
         ],
         metadata: { type: 'fraction_equal_parts', parts, options, correctIndex },
+    };
+};
+
+// Desatinné číslo zobrazujeme s čiarkou (slovenský zápis).
+const formatDecimal = (value: number) => String(Math.round(value * 1000) / 1000).replace('.', ',');
+
+const ONES_FEM = ['jedna', 'dve', 'tri', 'štyri', 'päť', 'šesť', 'sedem', 'osem', 'deväť'];
+const tenthsWord = (count: number) => (count === 1 ? 'desatina' : count >= 2 && count <= 4 ? 'desatiny' : 'desatín');
+
+const generateDecimalIntroProblem = (): Problem => {
+    const mode = randomChoice([
+        'to_fraction', 'to_fraction',
+        'from_fraction', 'from_fraction',
+        'read_to_decimal',
+        'read_to_count', 'read_to_count',
+        'compare', 'compare',
+        'order', 'order',
+        'sequence', 'sequence',
+        'number_line', 'number_line',
+        'arithmetic', 'arithmetic', 'arithmetic',
+    ] as const);
+
+    if (mode === 'to_fraction') return generateDecimalToFractionProblem();
+    if (mode === 'from_fraction') return generateFractionToDecimalProblem();
+    if (mode === 'read_to_decimal') return generateDecimalWordsToNumberProblem();
+    if (mode === 'compare') return generateDecimalCompareProblem();
+    if (mode === 'order') return generateDecimalOrderProblem();
+    if (mode === 'sequence') return generateDecimalSequenceProblem();
+    if (mode === 'number_line') return generateDecimalNumberLineProblem();
+    if (mode === 'arithmetic') return generateDecimalArithmeticProblem();
+    return generateDecimalToCountProblem();
+};
+
+const formatEuro = (value: number) => value.toFixed(2).replace('.', ',');
+
+// Sčítanie/odčítanie desatinných čísel — jednoduché aj slovné (peniaze €).
+const generateDecimalArithmeticProblem = (): Problem => {
+    const money = Math.random() < 0.45;
+
+    if (money) {
+        const sum = Math.random() < 0.5;
+        if (sum) {
+            const aCents = randomInt(2, 60) * 10; // násobky 0,10 €
+            const bCents = randomInt(2, 60) * 10;
+            const result = (aCents + bCents) / 100;
+            return {
+                id: uniqueId(),
+                kind: 'standard',
+                expression: `Polievka stojí ${formatEuro(aCents / 100)} € a rezeň ${formatEuro(bCents / 100)} €. Koľko zaplatíš spolu?`,
+                result,
+                steps: [`Spočítaj ceny: ${formatEuro(aCents / 100)} + ${formatEuro(bCents / 100)} = ${formatEuro(result)} €.`],
+                metadata: { type: 'decimal_arithmetic', left: aCents / 100, right: bCents / 100, op: '+', result, context: 'money' },
+            };
+        }
+        const priceCents = randomInt(5, 90) * 10;
+        const paid = priceCents <= 500 ? 5 : 10;
+        const result = (paid * 100 - priceCents) / 100;
+        return {
+            id: uniqueId(),
+            kind: 'standard',
+            expression: `Nákup stojí ${formatEuro(priceCents / 100)} €. Zaplatíš ${paid} €. Koľko ti vrátia?`,
+            result,
+            steps: [`Odčítaj od zaplatenej sumy: ${formatEuro(paid)} − ${formatEuro(priceCents / 100)} = ${formatEuro(result)} €.`],
+            metadata: { type: 'decimal_arithmetic', left: paid, right: priceCents / 100, op: '-', result, context: 'money' },
+        };
+    }
+
+    // Jednoduché desatiny.
+    const op = randomChoice(['+', '-'] as const);
+    if (op === '+') {
+        const a = randomInt(1, 20);
+        const b = randomInt(1, 20);
+        const result = roundTo((a + b) / 10);
+        return {
+            id: uniqueId(),
+            kind: 'standard',
+            expression: `${formatDecimal(a / 10)} + ${formatDecimal(b / 10)}`,
+            result,
+            steps: [`${formatDecimal(a / 10)} + ${formatDecimal(b / 10)} = ${formatDecimal(result)}.`],
+            metadata: { type: 'decimal_arithmetic', left: a / 10, right: b / 10, op: '+', result, context: 'plain' },
+        };
+    }
+    const a = randomInt(5, 25);
+    const b = randomInt(1, a - 1);
+    const result = roundTo((a - b) / 10);
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `${formatDecimal(a / 10)} − ${formatDecimal(b / 10)}`,
+        result,
+        steps: [`${formatDecimal(a / 10)} − ${formatDecimal(b / 10)} = ${formatDecimal(result)}.`],
+        metadata: { type: 'decimal_arithmetic', left: a / 10, right: b / 10, op: '-', result, context: 'plain' },
+    };
+};
+
+const roundTo = (value: number, places = 3) => Math.round(value * 10 ** places) / 10 ** places;
+
+// Postupnosť s desatinným krokom: "Pokračuj v rade: 0,6; 0,7; 0,8; ?" → 0,9.
+const generateDecimalSequenceProblem = (): Problem => {
+    const step = randomChoice([0.1, 0.2, 0.5]);
+    const start = roundTo(randomInt(0, 15) / 10);
+    const terms = [0, 1, 2].map(i => roundTo(start + i * step));
+    const answer = roundTo(start + 3 * step);
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Pokračuj v rade: ${terms.map(formatDecimal).join('; ')}; ?`,
+        result: answer,
+        steps: [
+            `Každé ďalšie číslo je o ${formatDecimal(step)} väčšie.`,
+            `${formatDecimal(terms[2])} + ${formatDecimal(step)} = ${formatDecimal(answer)}.`,
+        ],
+        metadata: { type: 'decimal_sequence', terms, step, answer },
+    };
+};
+
+// Desatinné číslo na číselnej osi: žiak prečíta, kde je značka.
+const generateDecimalNumberLineProblem = (): Problem => {
+    const config = randomChoice([
+        { min: 0, max: 1, step: 0.1 },
+        { min: 0, max: 2, step: 0.2 },
+        { min: 1, max: 2, step: 0.1 },
+    ]);
+    const stepCount = Math.round((config.max - config.min) / config.step);
+    const markIndex = randomInt(1, stepCount - 1);
+    const mark = roundTo(config.min + markIndex * config.step);
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Aké číslo je na číselnej osi označené šípkou?`,
+        result: mark,
+        steps: [
+            `Os je rozdelená po ${formatDecimal(config.step)}.`,
+            `Značka je na ${formatDecimal(mark)}.`,
+        ],
+        metadata: { type: 'decimal_number_line', min: config.min, max: config.max, step: config.step, mark },
+    };
+};
+
+// Hodnota na porovnanie: buď desatinné číslo, alebo zlomok (s textovým štítkom).
+interface DecimalQuantity { label: string; value: number; }
+
+const decimalQuantity = (): DecimalQuantity => {
+    const hundredth = Math.random() < 0.35;
+    const count = hundredth ? randomChoice([5, 15, 25, 35, 45, 75]) : randomInt(1, 9);
+    const value = hundredth ? count / 100 : count / 10;
+    return { label: formatDecimal(value), value };
+};
+
+const fractionQuantity = (): DecimalQuantity => {
+    const choice = randomChoice([
+        { n: 1, d: 2 }, { n: 1, d: 4 }, { n: 3, d: 4 }, { n: 1, d: 5 }, { n: 2, d: 5 }, { n: 3, d: 5 }, { n: 4, d: 5 },
+        { n: 3, d: 10 }, { n: 7, d: 10 }, { n: 1, d: 10 },
+    ]);
+    return { label: `${choice.n}⁄${choice.d}`, value: choice.n / choice.d };
+};
+
+const anyQuantity = (): DecimalQuantity => (Math.random() < 0.5 ? decimalQuantity() : fractionQuantity());
+
+// Porovnanie dvoch čísel (desatinné aj zlomky) — pozor na pascu "viac cifier = väčšie".
+const generateDecimalCompareProblem = (): Problem => {
+    const left = anyQuantity();
+    let right = anyQuantity();
+    let guard = 0;
+    while (left.value === right.value && guard++ < 20) {
+        right = anyQuantity();
+    }
+    const result = left.value > right.value ? 1 : 0;
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Ktoré číslo je väčšie: ${left.label} alebo ${right.label}? 1=prvý, 0=druhý`,
+        result,
+        steps: [
+            `Porovnaj hodnoty: ${left.label} a ${right.label}.`,
+            `Pomôž si rovnakým počtom desatinných miest alebo prevodom zlomku na desatinné číslo.`,
+            result === 1 ? `Väčšie je prvé číslo ${left.label}.` : `Väčšie je druhé číslo ${right.label}.`,
+        ],
+        metadata: { type: 'decimal_compare', leftLabel: left.label, rightLabel: right.label, leftValue: left.value, rightValue: right.value },
+    };
+};
+
+// Vyber najmenšie / najväčšie z troch čísel (desatinné aj zlomky).
+const generateDecimalOrderProblem = (): Problem => {
+    const extreme = randomChoice(['smallest', 'largest'] as const);
+    const options: DecimalQuantity[] = [];
+    let guard = 0;
+    while (options.length < 3 && guard++ < 60) {
+        const q = anyQuantity();
+        if (!options.some(o => o.value === q.value)) options.push(q);
+    }
+    const target = extreme === 'smallest'
+        ? Math.min(...options.map(o => o.value))
+        : Math.max(...options.map(o => o.value));
+    const correctIndex = options.findIndex(o => o.value === target);
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Ktoré číslo je ${extreme === 'smallest' ? 'najmenšie' : 'najväčšie'}?`,
+        result: correctIndex,
+        steps: [
+            `Porovnaj všetky tri čísla.`,
+            `${extreme === 'smallest' ? 'Najmenšie' : 'Najväčšie'} je ${options[correctIndex].label} (možnosť ${String.fromCharCode(65 + correctIndex)}).`,
+        ],
+        metadata: { type: 'decimal_order', options, correctIndex, extreme },
+    };
+};
+
+// Desatinné → zlomok (využíva grafický zlomkový vstup; akceptuje ekvivalenty).
+const generateDecimalToFractionProblem = (): Problem => {
+    const useHundredths = Math.random() < 0.3;
+    if (useHundredths) {
+        const choice = randomChoice([{ n: 25, d: 100 }, { n: 75, d: 100 }, { n: 5, d: 100 }, { n: 15, d: 100 }, { n: 35, d: 100 }]);
+        const value = choice.n / choice.d;
+        return {
+            id: uniqueId(),
+            kind: 'standard',
+            expression: `Zapíš ${formatDecimal(value)} ako zlomok.`,
+            result: value,
+            steps: [
+                `Za desatinnou čiarkou sú dve miesta → stotiny → menovateľ 100.`,
+                `${formatDecimal(value)} = ${choice.n}/100.`,
+            ],
+            metadata: { type: 'fraction_answer', numerator: choice.n, denominator: choice.d, context: 'decimal' },
+        };
+    }
+    const count = randomInt(1, 9) + (Math.random() < 0.3 ? 10 : 0);
+    const value = count / 10;
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Zapíš ${formatDecimal(value)} ako zlomok.`,
+        result: value,
+        steps: [
+            `Za desatinnou čiarkou je jedno miesto → desatiny → menovateľ 10.`,
+            `${formatDecimal(value)} = ${count}/10.`,
+        ],
+        metadata: { type: 'fraction_answer', numerator: count, denominator: 10, context: 'decimal' },
+    };
+};
+
+// Zlomok → desatinné číslo (odpoveď je číslo s čiarkou/bodkou).
+const generateFractionToDecimalProblem = (): Problem => {
+    const choice = randomChoice([
+        { n: randomInt(1, 9), d: 10 },
+        { n: 1, d: 2 }, { n: 3, d: 2 },
+        { n: 1, d: 4 }, { n: 3, d: 4 }, { n: 5, d: 4 },
+        { n: randomInt(1, 4), d: 5 },
+        { n: randomChoice([5, 15, 25, 35, 75]), d: 100 },
+    ]);
+    const value = choice.n / choice.d;
+    const widen = choice.d === 2 ? 5 : choice.d === 4 ? 25 : choice.d === 5 ? 2 : choice.d === 100 ? 1 : 1;
+    const widenedNumerator = choice.d === 10 ? choice.n : choice.d === 100 ? choice.n : choice.n * widen;
+    const widenedDen = choice.d === 10 ? 10 : 100;
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Zapíš ${choice.n}⁄${choice.d} ako desatinné číslo.`,
+        result: value,
+        steps: [
+            `Zlomok upravíme na desatiny alebo stotiny: ${choice.n}⁄${choice.d} = ${widenedNumerator}⁄${widenedDen}.`,
+            `${widenedNumerator}⁄${widenedDen} = ${formatDecimal(value)}.`,
+        ],
+        metadata: { type: 'decimal_from_fraction', numerator: choice.n, denominator: choice.d, value },
+    };
+};
+
+// Slovom → desatinné číslo: "sedem desatín" → 0,7.
+const generateDecimalWordsToNumberProblem = (): Problem => {
+    const count = randomInt(1, 9);
+    const value = count / 10;
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Zapíš desatinným číslom: ${ONES_FEM[count - 1]} ${tenthsWord(count)}.`,
+        result: value,
+        steps: [
+            `${ONES_FEM[count - 1]} ${tenthsWord(count)} = ${count}/10.`,
+            `${count}/10 = ${formatDecimal(value)}.`,
+        ],
+        metadata: { type: 'decimal_place', value, unit: 'desatiny', count, direction: 'to_decimal' },
+    };
+};
+
+// Desatinné číslo → počet desatín/stotín: "Koľko desatín má 0,7?" → 7.
+const generateDecimalToCountProblem = (): Problem => {
+    const useHundredths = Math.random() < 0.4;
+    if (useHundredths) {
+        const count = randomChoice([5, 15, 25, 35, 45, 75, 85]);
+        const value = count / 100;
+        return {
+            id: uniqueId(),
+            kind: 'standard',
+            expression: `Koľko stotín má číslo ${formatDecimal(value)}?`,
+            result: count,
+            steps: [
+                `Stotiny sú dve miesta za čiarkou.`,
+                `${formatDecimal(value)} = ${count} stotín.`,
+            ],
+            metadata: { type: 'decimal_place', value, unit: 'stotiny', count, direction: 'to_count' },
+        };
+    }
+    const count = randomInt(1, 9);
+    const value = count / 10;
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Koľko desatín má číslo ${formatDecimal(value)}?`,
+        result: count,
+        steps: [
+            `Desatiny sú prvé miesto za čiarkou.`,
+            `${formatDecimal(value)} = ${count} ${tenthsWord(count)}.`,
+        ],
+        metadata: { type: 'decimal_place', value, unit: 'desatiny', count, direction: 'to_count' },
     };
 };
 

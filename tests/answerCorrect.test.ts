@@ -339,3 +339,112 @@ test('fraction compare with different denominators: first/second semantics', () 
     assert.equal(isAnswerCorrect(compareDiffDen, 'prvý'), true);
     assert.equal(isAnswerCorrect(compareDiffDen, 'druhý'), false);
 });
+
+const decimalFromFraction = problem(
+    'Zapíš 7⁄10 ako desatinné číslo.',
+    0.7,
+    { type: 'decimal_from_fraction', numerator: 7, denominator: 10, value: 0.7 },
+);
+
+test('decimal from fraction accepts dot and comma notation', () => {
+    assert.equal(isAnswerCorrect(decimalFromFraction, 0.7), true);
+    assert.equal(isAnswerCorrect(decimalFromFraction, '0,7'), true);
+    assert.equal(isAnswerCorrect(decimalFromFraction, '0.7'), true);
+    assert.equal(isAnswerCorrect(decimalFromFraction, 0.8), false);
+    assert.equal(isAnswerCorrect(decimalFromFraction, 7), false);
+});
+
+const decimalToFraction = problem(
+    'Zapíš 0,3 ako zlomok.',
+    0.3,
+    { type: 'fraction_answer', numerator: 3, denominator: 10, context: 'decimal' },
+);
+
+test('decimal to fraction accepts equivalent fractions', () => {
+    assert.equal(isAnswerCorrect(decimalToFraction, '3/10'), true);
+    assert.equal(isAnswerCorrect(decimalToFraction, '6/20'), true);
+    assert.equal(isAnswerCorrect(decimalToFraction, '3/100'), false);
+});
+
+const decimalPlace = problem(
+    'Koľko desatín má číslo 0,7?',
+    7,
+    { type: 'decimal_place', value: 0.7, unit: 'desatiny', count: 7, direction: 'to_count' },
+);
+
+test('decimal place count answer', () => {
+    assert.equal(isAnswerCorrect(decimalPlace, 7), true);
+    assert.equal(isAnswerCorrect(decimalPlace, 0.7), false);
+});
+
+const decimalCompareTrap = problem(
+    'Ktoré číslo je väčšie: 0,3 alebo 0,25? 1=prvý, 0=druhý',
+    1,
+    { type: 'decimal_compare', leftLabel: '0,3', rightLabel: '0,25', leftValue: 0.3, rightValue: 0.25 },
+);
+
+test('decimal compare avoids the more-digits trap (first/second)', () => {
+    assert.equal(isAnswerCorrect(decimalCompareTrap, 1), true);
+    assert.equal(isAnswerCorrect(decimalCompareTrap, 0), false);
+    assert.equal(isAnswerCorrect(decimalCompareTrap, 'prvý'), true);
+});
+
+const decimalOrder = problem(
+    'Ktoré číslo je najmenšie?',
+    1,
+    { type: 'decimal_order', options: [{ label: '0,5', value: 0.5 }, { label: '0,3', value: 0.3 }, { label: '3⁄4', value: 0.75 }], correctIndex: 1, extreme: 'smallest' },
+);
+
+test('decimal order picks the correct option index', () => {
+    assert.equal(isAnswerCorrect(decimalOrder, 1), true);
+    assert.equal(isAnswerCorrect(decimalOrder, 0), false);
+    assert.equal(isAnswerCorrect(decimalOrder, 2), false);
+});
+
+const decimalSequence = problem(
+    'Pokračuj v rade: 0,6; 0,7; 0,8; ?',
+    0.9,
+    { type: 'decimal_sequence', terms: [0.6, 0.7, 0.8], step: 0.1, answer: 0.9 },
+);
+
+test('decimal sequence next term (dot/comma accepted)', () => {
+    assert.equal(isAnswerCorrect(decimalSequence, 0.9), true);
+    assert.equal(isAnswerCorrect(decimalSequence, '0,9'), true);
+    assert.equal(isAnswerCorrect(decimalSequence, 1), false);
+});
+
+const decimalNumberLine = problem(
+    'Aké číslo je na číselnej osi označené šípkou?',
+    0.3,
+    { type: 'decimal_number_line', min: 0, max: 1, step: 0.1, mark: 0.3 },
+);
+
+test('decimal number line reads the marked value', () => {
+    assert.equal(isAnswerCorrect(decimalNumberLine, 0.3), true);
+    assert.equal(isAnswerCorrect(decimalNumberLine, '0,3'), true);
+    assert.equal(isAnswerCorrect(decimalNumberLine, 0.2), false);
+});
+
+const decimalAddPlain = problem(
+    '0,4 + 0,3',
+    0.7,
+    { type: 'decimal_arithmetic', left: 0.4, right: 0.3, op: '+', result: 0.7, context: 'plain' },
+);
+
+test('decimal arithmetic plain add (dot/comma)', () => {
+    assert.equal(isAnswerCorrect(decimalAddPlain, 0.7), true);
+    assert.equal(isAnswerCorrect(decimalAddPlain, '0,7'), true);
+    assert.equal(isAnswerCorrect(decimalAddPlain, 0.8), false);
+});
+
+const decimalMoney = problem(
+    'Nákup stojí 3,50 €. Zaplatíš 5 €. Koľko ti vrátia?',
+    1.5,
+    { type: 'decimal_arithmetic', left: 5, right: 3.5, op: '-', result: 1.5, context: 'money' },
+);
+
+test('decimal money change answer', () => {
+    assert.equal(isAnswerCorrect(decimalMoney, 1.5), true);
+    assert.equal(isAnswerCorrect(decimalMoney, '1,5'), true);
+    assert.equal(isAnswerCorrect(decimalMoney, 1.6), false);
+});

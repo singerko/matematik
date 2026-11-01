@@ -570,6 +570,22 @@ const explainByMetadata = (problem: Problem, metadata: ProblemMetadata): Problem
         }
         case 'fraction_answer': {
             const { numerator, denominator, context } = metadata;
+            if (context === 'decimal') {
+                return {
+                    topic: 'desatinné čísla a zlomky',
+                    hint: `Počet miest za čiarkou určuje menovateľ: jedno miesto → 10, dve miesta → 100.`,
+                    hints: [
+                        { id: 'den', title: 'menovateľ', text: `Za čiarkou je ${denominator === 10 ? 'jedno miesto → menovateľ 10' : 'viac miest → menovateľ 100'}.` },
+                        { id: 'num', title: 'čitateľ', text: `Čitateľ sú cifry za čiarkou: ${numerator}. Zlomok ${numerator}/${denominator} môžeš aj skrátiť.` },
+                    ],
+                    steps: [
+                        `Počet miest za čiarkou určuje menovateľ (${denominator}).`,
+                        `Cifry za čiarkou sú čitateľ (${numerator}).`,
+                        `Odpoveď je ${numerator}/${denominator}.`,
+                    ],
+                    recommendation: 'Precvič zápis desatinného čísla ako zlomku.',
+                };
+            }
             if (context === 'time') {
                 return {
                     topic: 'zlomky a čas',
@@ -599,6 +615,110 @@ const explainByMetadata = (problem: Problem, metadata: ProblemMetadata): Problem
                     `Odpoveď je ${numerator}/${denominator}.`,
                 ],
                 recommendation: 'Precvič zápis časti celku ako zlomku.',
+            };
+        }
+        case 'decimal_from_fraction': {
+            const { numerator, denominator, value } = metadata;
+            const decimalStr = String(Math.round(value * 1000) / 1000).replace('.', ',');
+            return {
+                topic: 'zlomok na desatinné číslo',
+                hint: `Uprav zlomok na desatiny (menovateľ 10) alebo stotiny (menovateľ 100).`,
+                hints: [
+                    { id: 'widen', title: 'na desatiny/stotiny', text: `${numerator}⁄${denominator} rozšír alebo vydeľ tak, aby menovateľ bol 10 alebo 100.` },
+                    { id: 'write', title: 'zápis', text: `Čitateľ nad 10 sú desatiny, nad 100 stotiny. Výsledok je ${decimalStr}.` },
+                ],
+                steps: [
+                    `Zlomok ${numerator}⁄${denominator} uprav na desatiny alebo stotiny.`,
+                    `Výsledok je ${decimalStr}.`,
+                ],
+                recommendation: 'Precvič premenu zlomku na desatinné číslo.',
+            };
+        }
+        case 'decimal_place': {
+            const { value, unit, count, direction } = metadata;
+            const decimalStr = String(Math.round(value * 1000) / 1000).replace('.', ',');
+            return {
+                topic: 'rozklad desatinného čísla',
+                hint: unit === 'desatiny'
+                    ? `Desatiny sú prvé miesto za desatinnou čiarkou.`
+                    : `Stotiny sú dve miesta za desatinnou čiarkou.`,
+                steps: direction === 'to_decimal'
+                    ? [`${count} ${unit === 'desatiny' ? 'desatín' : 'stotín'} = ${count}/${unit === 'desatiny' ? 10 : 100}.`, `Desatinným číslom je to ${decimalStr}.`]
+                    : [`${decimalStr} má za čiarkou cifry, ktoré hovoria ${unit}.`, `${decimalStr} = ${count} ${unit === 'desatiny' ? 'desatín' : 'stotín'}.`],
+                recommendation: 'Precvič rozklad desatinného čísla na desatiny a stotiny.',
+            };
+        }
+        case 'decimal_compare': {
+            const { leftLabel, rightLabel, leftValue, rightValue } = metadata;
+            const result = leftValue > rightValue ? 1 : 0;
+            return {
+                topic: 'porovnávanie desatinných čísel',
+                hint: `Pozor na pascu: viac cifier neznamená väčšie číslo. Porovnaj hodnoty na rovnakom počte miest.`,
+                hints: [
+                    { id: 'align', title: 'rovnaké miesta', text: `Dopíš nuly, aby mali rovnako veľa desatinných miest, napr. 0,3 = 0,30.` },
+                    { id: 'convert', title: 'prevod', text: `Zlomok si premeň na desatinné číslo a potom porovnaj.` },
+                ],
+                steps: [
+                    `Porovnaj ${leftLabel} a ${rightLabel} na rovnakom počte desatinných miest.`,
+                    result === 1 ? `Väčšie je prvé číslo ${leftLabel}.` : `Väčšie je druhé číslo ${rightLabel}.`,
+                ],
+                recommendation: 'Precvič porovnávanie desatinných čísel a zlomkov.',
+            };
+        }
+        case 'decimal_order': {
+            const { options, correctIndex, extreme } = metadata;
+            const letter = String.fromCharCode(65 + correctIndex);
+            return {
+                topic: 'usporiadanie čísel',
+                hint: `Porovnaj všetky tri čísla. Zlomky si môžeš premeniť na desatinné.`,
+                steps: [
+                    `Premeň zlomky na desatinné a porovnaj.`,
+                    `${extreme === 'smallest' ? 'Najmenšie' : 'Najväčšie'} je ${options[correctIndex].label} — možnosť ${letter}.`,
+                ],
+                recommendation: 'Precvič usporiadanie desatinných čísel a zlomkov.',
+            };
+        }
+        case 'decimal_sequence': {
+            const { terms, step, answer } = metadata;
+            const dec = (v: number) => String(Math.round(v * 1000) / 1000).replace('.', ',');
+            return {
+                topic: 'desatinné postupnosti',
+                hint: `Zisti, o koľko sa čísla menia, a pripočítaj ten istý krok.`,
+                steps: [
+                    `Rozdiel medzi susednými číslami je ${dec(step)}.`,
+                    `${dec(terms[terms.length - 1])} + ${dec(step)} = ${dec(answer)}.`,
+                ],
+                recommendation: 'Precvič postupnosti s desatinným krokom.',
+            };
+        }
+        case 'decimal_number_line': {
+            const { step, mark } = metadata;
+            const dec = (v: number) => String(Math.round(v * 1000) / 1000).replace('.', ',');
+            return {
+                topic: 'číselná os',
+                hint: `Zisti, po koľko je os rozdelená, a spočítaj dieliky po značku.`,
+                steps: [
+                    `Jeden dielik je ${dec(step)}.`,
+                    `Značka je na čísle ${dec(mark)}.`,
+                ],
+                recommendation: 'Precvič čítanie desatinných čísel z číselnej osi.',
+            };
+        }
+        case 'decimal_arithmetic': {
+            const { left, right, op, result, context } = metadata;
+            const dec = (v: number) => (context === 'money' ? v.toFixed(2) : String(Math.round(v * 1000) / 1000)).replace('.', ',');
+            return {
+                topic: context === 'money' ? 'počítanie s peniazmi' : 'sčítanie a odčítanie desatinných',
+                hint: `Desatinné čísla sčítavaj/odčítavaj pod sebou — čiarku pod čiarku.`,
+                hints: [
+                    { id: 'align', title: 'čiarka pod čiarku', text: `Zapíš čísla pod seba tak, aby boli desatinné čiarky nad sebou.` },
+                    { id: 'calc', title: 'výpočet', text: `${dec(left)} ${op === '+' ? '+' : '−'} ${dec(right)} = ${dec(result)}${context === 'money' ? ' €' : ''}.` },
+                ],
+                steps: [
+                    `Zarovnaj desatinné čiarky pod seba.`,
+                    `${dec(left)} ${op === '+' ? '+' : '−'} ${dec(right)} = ${dec(result)}${context === 'money' ? ' €' : ''}.`,
+                ],
+                recommendation: 'Precvič sčítanie a odčítanie desatinných čísel.',
             };
         }
         case 'fraction_equal_parts': {
@@ -1013,6 +1133,9 @@ export const diagnoseAnswer = (problem: Problem, userAnswer: number | string): s
                 const { numerator, denominator, context } = metadata;
                 const parsed = parseFractionAnswer(userAnswer);
                 if (!parsed) return 'Zadaj čitateľ aj menovateľ zlomku.';
+                if (context === 'decimal') {
+                    return `Počet miest za čiarkou je menovateľ (${denominator}), cifry za čiarkou sú čitateľ (${numerator}). Odpoveď je ${numerator}/${denominator} (alebo skrátene).`;
+                }
                 if (context === 'time') {
                     if (parsed.den !== 60 && parsed.num === numerator) {
                         return `Čitateľ máš dobre, ale menovateľ je celá hodina = 60 minút. Správne je ${numerator}/60.`;
@@ -1028,6 +1151,47 @@ export const diagnoseAnswer = (problem: Problem, userAnswer: number | string): s
                 const { parts, correctIndex } = metadata;
                 const letter = String.fromCharCode(65 + correctIndex);
                 return `Zlomok potrebuje rovnako veľké časti. Správny je obrázok ${letter}, kde je ${parts} rovnakých kúskov.`;
+            }
+            case 'decimal_from_fraction': {
+                const { numerator, denominator, value } = metadata;
+                const decimalStr = String(Math.round(value * 1000) / 1000).replace('.', ',');
+                if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
+                return `Zlomok ${numerator}⁄${denominator} uprav na desatiny alebo stotiny. Výsledok je ${decimalStr}.`;
+            }
+            case 'decimal_place': {
+                const { value, unit, count, direction } = metadata;
+                const decimalStr = String(Math.round(value * 1000) / 1000).replace('.', ',');
+                if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
+                return direction === 'to_decimal'
+                    ? `${count} ${unit === 'desatiny' ? 'desatín' : 'stotín'} zapíšeš ako ${decimalStr}.`
+                    : `${decimalStr} má ${count} ${unit === 'desatiny' ? 'desatín' : 'stotín'} (${unit === 'desatiny' ? 'prvé miesto' : 'dve miesta'} za čiarkou).`;
+            }
+            case 'decimal_compare': {
+                const { leftLabel, rightLabel, leftValue, rightValue } = metadata;
+                const expected = leftValue > rightValue ? 1 : 0;
+                return `Pozor, viac cifier neznamená väčšie číslo. ${expected === 1 ? `Väčšie je ${leftLabel} (prvé).` : `Väčšie je ${rightLabel} (druhé).`}`;
+            }
+            case 'decimal_order': {
+                const { options, correctIndex, extreme } = metadata;
+                return `${extreme === 'smallest' ? 'Najmenšie' : 'Najväčšie'} číslo je ${options[correctIndex].label} — možnosť ${String.fromCharCode(65 + correctIndex)}.`;
+            }
+            case 'decimal_sequence': {
+                const { step, answer } = metadata;
+                const dec = (v: number) => String(Math.round(v * 1000) / 1000).replace('.', ',');
+                if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
+                return `Čísla rastú o ${dec(step)}. Ďalšie číslo je ${dec(answer)}.`;
+            }
+            case 'decimal_number_line': {
+                const { step, mark } = metadata;
+                const dec = (v: number) => String(Math.round(v * 1000) / 1000).replace('.', ',');
+                if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
+                return `Jeden dielik je ${dec(step)}. Spočítaj dieliky po šípku — značka je na ${dec(mark)}.`;
+            }
+            case 'decimal_arithmetic': {
+                const { left, right, op, result, context } = metadata;
+                const dec = (v: number) => (context === 'money' ? v.toFixed(2) : String(Math.round(v * 1000) / 1000)).replace('.', ',');
+                if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
+                return `Zarovnaj desatinné čiarky pod seba: ${dec(left)} ${op === '+' ? '+' : '−'} ${dec(right)} = ${dec(result)}${context === 'money' ? ' €' : ''}.`;
             }
             case 'order_operations': {
                 const { hasParentheses, a, b, c } = metadata;
@@ -1148,6 +1312,13 @@ const DIAGNOSIS_LABELS: Record<ErrorDiagnosisCode, string> = {
     fraction_of_time: 'zlomky a čas',
     fraction_answer: 'zápis zlomku',
     fraction_equal_parts: 'rovnaké časti',
+    decimal_fraction: 'desatinné čísla a zlomky',
+    decimal_place: 'rozklad desatinného čísla',
+    decimal_compare: 'porovnávanie desatinných čísel',
+    decimal_order: 'usporiadanie čísel',
+    decimal_sequence: 'desatinné postupnosti',
+    decimal_number_line: 'číselná os',
+    decimal_arithmetic: 'sčítanie a odčítanie desatinných',
     number_comparison_choice: 'výber prvého alebo druhého čísla',
     rounding_direction: 'smer zaokrúhlenia',
     unit_conversion_direction: 'smer premeny jednotiek',
@@ -1248,6 +1419,20 @@ const classifyAnswer = (problem: Problem, userAnswer: number | string): ErrorDia
             return 'fraction_answer';
         case 'fraction_equal_parts':
             return 'fraction_equal_parts';
+        case 'decimal_from_fraction':
+            return 'decimal_fraction';
+        case 'decimal_place':
+            return 'decimal_place';
+        case 'decimal_compare':
+            return 'decimal_compare';
+        case 'decimal_order':
+            return 'decimal_order';
+        case 'decimal_sequence':
+            return 'decimal_sequence';
+        case 'decimal_number_line':
+            return 'decimal_number_line';
+        case 'decimal_arithmetic':
+            return 'decimal_arithmetic';
         case 'number_comparison':
             return 'number_comparison_choice';
         case 'rounding':

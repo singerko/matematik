@@ -14,7 +14,7 @@ export type MultiplicationTableTopic =
     | 'multiplication_table_8'
     | 'multiplication_table_9'
     | 'multiplication_table_10';
-export type SchoolTopic = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'large_multiplication' | 'large_division' | 'indian_division' | 'long_division' | 'word_problem' | 'order_operations' | 'divisibility' | 'multiples_divisors' | 'fractions_intro' | 'number_comparison' | 'rounding' | 'unit_conversion' | 'geometry_area' | 'roman_numerals' | 'money_coins' | 'logical_sequences' | MultiplicationTableTopic;
+export type SchoolTopic = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'large_multiplication' | 'large_division' | 'indian_division' | 'long_division' | 'word_problem' | 'order_operations' | 'divisibility' | 'multiples_divisors' | 'fractions_intro' | 'decimals_intro' | 'number_comparison' | 'rounding' | 'unit_conversion' | 'geometry_area' | 'roman_numerals' | 'money_coins' | 'logical_sequences' | MultiplicationTableTopic;
 
 export type LengthUnit = 'mm' | 'cm' | 'dm' | 'm' | 'km';
 export type WeightUnit = 'g' | 'kg';
@@ -233,7 +233,7 @@ export type WordProblemBaseTopic = 'addition' | 'subtraction' | 'multiplication'
 export type FractionQuantityContext = 'generic' | 'sharing' | 'chocolate' | 'students' | 'pizza';
 
 // Kontext pre úlohu, kde žiak zadáva zlomok (čitateľ/menovateľ) ako odpoveď.
-export type FractionAnswerContext = 'time' | 'set' | 'shape';
+export type FractionAnswerContext = 'time' | 'set' | 'shape' | 'decimal';
 
 // Vyfarbený útvar v zadaní — žiak z neho prečíta zlomok.
 export type FractionShape =
@@ -277,6 +277,13 @@ export type ProblemMetadata =
     | { type: 'fraction_of_time'; numerator: number; denominator: number }
     | { type: 'fraction_answer'; numerator: number; denominator: number; context: FractionAnswerContext; shape?: FractionShape }
     | { type: 'fraction_equal_parts'; parts: number; options: number[][]; correctIndex: number }
+    | { type: 'decimal_from_fraction'; numerator: number; denominator: number; value: number }
+    | { type: 'decimal_place'; value: number; unit: 'desatiny' | 'stotiny'; count: number; direction: 'to_decimal' | 'to_count' }
+    | { type: 'decimal_compare'; leftLabel: string; rightLabel: string; leftValue: number; rightValue: number }
+    | { type: 'decimal_order'; options: { label: string; value: number }[]; correctIndex: number; extreme: 'smallest' | 'largest' }
+    | { type: 'decimal_sequence'; terms: number[]; step: number; answer: number }
+    | { type: 'decimal_number_line'; min: number; max: number; step: number; mark: number }
+    | { type: 'decimal_arithmetic'; left: number; right: number; op: '+' | '-'; result: number; context: 'plain' | 'money' }
     | { type: 'indian_division' }
     | { type: 'long_division' }
     | { type: 'word_problem'; baseTopic?: WordProblemBaseTopic }
@@ -353,6 +360,13 @@ export type ErrorDiagnosisCode =
     | 'fraction_of_time'
     | 'fraction_answer'
     | 'fraction_equal_parts'
+    | 'decimal_fraction'
+    | 'decimal_place'
+    | 'decimal_compare'
+    | 'decimal_order'
+    | 'decimal_sequence'
+    | 'decimal_number_line'
+    | 'decimal_arithmetic'
     | 'fraction_equal_parts'
     | 'number_comparison_choice'
     | 'rounding_direction'
