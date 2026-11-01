@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { type Constraints, type ErrorDiagnosisCode, type Problem, type TrainingResult, type VisualSequenceFrame, type VisualSequenceOption } from '../lib/types';
+import { type Constraints, type ErrorDiagnosisCode, type FractionShape, type Problem, type TrainingResult, type VisualSequenceFrame, type VisualSequenceOption } from '../lib/types';
 import { generateProblem } from '../lib/generator';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XCircle, CheckCircle, ArrowRight, CornerDownLeft, Delete, Calculator, X, RotateCcw } from 'lucide-react';
@@ -43,6 +43,77 @@ const isYesNoProblem = (problem: Problem) => problem.expression.includes('1=áno
 const isFirstSecondProblem = (problem: Problem) => problem.expression.includes('1=prvý, 0=druhý');
 const isLogicalSequenceProblem = (problem: Problem) => problem.metadata?.type === 'logical_sequence';
 const isRomanTextAnswerProblem = (problem: Problem) => getProblemMetadata(problem)?.type === 'arabic_to_roman';
+const isFractionAnswerProblem = (problem: Problem) => getProblemMetadata(problem)?.type === 'fraction_answer';
+
+const FRACTION_FILL = '#facc15';
+const FRACTION_EMPTY = '#1e293b';
+const FRACTION_STROKE = '#f8fafc';
+
+const polarPoint = (cx: number, cy: number, r: number, deg: number) => {
+    const rad = ((deg - 90) * Math.PI) / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+};
+
+const sectorPath = (cx: number, cy: number, r: number, a0: number, a1: number) => {
+    const p0 = polarPoint(cx, cy, r, a0);
+    const p1 = polarPoint(cx, cy, r, a1);
+    const large = a1 - a0 > 180 ? 1 : 0;
+    return `M ${cx} ${cy} L ${p0.x} ${p0.y} A ${r} ${r} 0 ${large} 1 ${p1.x} ${p1.y} Z`;
+};
+
+// Vyfarbený útvar v zadaní (pruh / mriežka / koláč).
+const FractionShapeView: React.FC<{ shape: FractionShape }> = ({ shape }) => {
+    if (shape.kind === 'bar') {
+        return (
+            <svg width={Math.min(300, shape.parts * 44)} height={60} viewBox={`0 0 ${shape.parts * 44} 60`} role="img" aria-label="Vyfarbený pruh">
+                {Array.from({ length: shape.parts }).map((_, i) => (
+                    <rect key={i} x={i * 44} y={2} width={44} height={56} fill={i < shape.shaded ? FRACTION_FILL : FRACTION_EMPTY} stroke={FRACTION_STROKE} strokeWidth={2} />
+                ))}
+            </svg>
+        );
+    }
+
+    if (shape.kind === 'grid') {
+        const cell = 46;
+        return (
+            <svg width={shape.cols * cell} height={shape.rows * cell} viewBox={`0 0 ${shape.cols * cell} ${shape.rows * cell}`} role="img" aria-label="Vyfarbená mriežka">
+                {Array.from({ length: shape.rows * shape.cols }).map((_, i) => {
+                    const row = Math.floor(i / shape.cols);
+                    const col = i % shape.cols;
+                    return <rect key={i} x={col * cell} y={row * cell} width={cell} height={cell} fill={i < shape.shaded ? FRACTION_FILL : FRACTION_EMPTY} stroke={FRACTION_STROKE} strokeWidth={2} />;
+                })}
+            </svg>
+        );
+    }
+
+    const size = 150;
+    const r = size / 2 - 3;
+    const base = 360 / shape.parts;
+    return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Vyfarbený kruh">
+            {Array.from({ length: shape.parts }).map((_, i) => (
+                <path key={i} d={sectorPath(size / 2, size / 2, r, i * base, (i + 1) * base)} fill={i < shape.shaded ? FRACTION_FILL : FRACTION_EMPTY} stroke={FRACTION_STROKE} strokeWidth={2} />
+            ))}
+        </svg>
+    );
+};
+
+// Kruh rozdelený radiálnymi čiarami podľa veľkostí sektorov (na posúdenie rovnosti častí).
+const CircleDivisionView: React.FC<{ sizes: number[]; size?: number }> = ({ sizes, size = 104 }) => {
+    const r = size / 2 - 4;
+    const cx = size / 2;
+    const cy = size / 2;
+    const boundaries = sizes.map((_, i) => sizes.slice(0, i).reduce((acc, s) => acc + s, 0));
+    return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Rozdelený kruh">
+            <circle cx={cx} cy={cy} r={r} fill="#f8fafc" stroke="#0f172a" strokeWidth={2.5} />
+            {boundaries.map((deg, i) => {
+                const p = polarPoint(cx, cy, r, deg);
+                return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#dc2626" strokeWidth={2.5} strokeLinecap="round" />;
+            })}
+        </svg>
+    );
+};
 
 const dotPositions: Record<VisualSequenceFrame['dot'], { x: number; y: number }> = {
     topLeft: { x: 25, y: 25 },
@@ -507,6 +578,93 @@ const LargeMultiplicationDisplay: React.FC<{ problem: Problem; stepIndex: number
     );
 };
 
+// Jeden pruh rovnakej dĺžky rozdelený na `den` dielikov, prvých `num` vyfarbených.
+const FractionBar: React.FC<{ num: number; den: number }> = ({ num, den }) => {
+    const width = 240;
+    const height = 34;
+    const cell = width / den;
+    return (
+        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${num} z ${den}`}>
+            {Array.from({ length: den }).map((_, i) => (
+                <rect key={i} x={i * cell} y={1} width={cell} height={height - 2} fill={i < num ? FRACTION_FILL : FRACTION_EMPTY} stroke={FRACTION_STROKE} strokeWidth={1.5} />
+            ))}
+        </svg>
+    );
+};
+
+const FractionCompareBars: React.FC<{ leftNum: number; leftDen: number; rightNum: number; rightDen: number }> = ({ leftNum, leftDen, rightNum, rightDen }) => {
+    const row = (label: string, num: number, den: number) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <span style={{ color: '#f8fafc', fontWeight: 900, fontSize: '1.4rem', minWidth: '2.6rem', textAlign: 'right' }}>{label}</span>
+            <FractionBar num={num} den={den} />
+        </div>
+    );
+    return (
+        <div style={{ display: 'inline-flex', flexDirection: 'column', gap: '0.6rem' }}>
+            {row(`${leftNum}⁄${leftDen}`, leftNum, leftDen)}
+            {row(`${rightNum}⁄${rightDen}`, rightNum, rightDen)}
+        </div>
+    );
+};
+
+const FractionAnswerInput: React.FC<{
+    numerator: string;
+    denominator: string;
+    activeField: 'num' | 'den';
+    onSelect: (field: 'num' | 'den') => void;
+    status: SessionStatus;
+}> = ({ numerator, denominator, activeField, onSelect, status }) => {
+    const frameColor = status === 'CORRECT'
+        ? 'rgba(34,197,94,0.75)'
+        : status === 'WRONG'
+            ? 'rgba(239,68,68,0.75)'
+            : 'rgba(96,165,250,0.45)';
+
+    const fieldStyle = (active: boolean): React.CSSProperties => ({
+        minWidth: '5.5rem',
+        padding: '0.5rem 1rem',
+        borderRadius: '0.6rem',
+        fontSize: '2.4rem',
+        fontWeight: 900,
+        fontFamily: 'monospace',
+        lineHeight: 1,
+        color: '#f8fafc',
+        background: active ? 'rgba(96,165,250,0.25)' : 'rgba(15,23,42,0.6)',
+        border: active ? '2px solid rgba(147,197,253,0.9)' : '2px solid rgba(148,163,184,0.35)',
+        cursor: 'pointer',
+    });
+
+    return (
+        <div
+            style={{
+                display: 'inline-flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.1rem',
+                padding: '0.9rem 1.4rem',
+                borderRadius: '0.9rem',
+                border: `2px solid ${frameColor}`,
+                background: 'rgba(15,23,42,0.78)',
+                boxShadow: '0 10px 28px rgba(0,0,0,0.18)',
+            }}
+        >
+            <div style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                Tvoja odpoveď
+            </div>
+            <button type="button" style={fieldStyle(activeField === 'num')} onClick={() => onSelect('num')}>
+                {numerator || '?'}
+            </button>
+            <div style={{ width: '6.5rem', height: '4px', background: '#f8fafc', borderRadius: '2px', margin: '0.45rem 0' }} />
+            <button type="button" style={fieldStyle(activeField === 'den')} onClick={() => onSelect('den')}>
+                {denominator || '?'}
+            </button>
+            <div style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                hore čitateľ · dole menovateľ
+            </div>
+        </div>
+    );
+};
+
 const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems = [], onComplete, onExit }) => {
     const [problems, setProblems] = useState<Problem[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -527,6 +685,9 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
     const [largeMulDigitInput, setLargeMulDigitInput] = useState('');
     const [largeMulCarryInput, setLargeMulCarryInput] = useState('');
     const [largeMulActiveField, setLargeMulActiveField] = useState<'digit' | 'carry'>('digit');
+    const [fractionNum, setFractionNum] = useState('');
+    const [fractionDen, setFractionDen] = useState('');
+    const [fractionActiveField, setFractionActiveField] = useState<'num' | 'den'>('num');
     const [pendingStepCompletion, setPendingStepCompletion] = useState<{
         result: TrainingResult;
         title: string;
@@ -621,6 +782,9 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
         setLargeMulDigitInput('');
         setLargeMulCarryInput('');
         setLargeMulActiveField('digit');
+        setFractionNum('');
+        setFractionDen('');
+        setFractionActiveField('num');
         setPendingStepCompletion(null);
         setDirectAnswer(null);
         setSelectedWordOperation(null);
@@ -703,6 +867,31 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
             return;
         }
 
+        if (isFractionAnswerProblem(currentProblem)) {
+            if (char === 'DEL') {
+                if (fractionActiveField === 'num') {
+                    setFractionNum(prev => prev.slice(0, -1));
+                } else {
+                    setFractionDen(prev => prev.slice(0, -1));
+                }
+                return;
+            }
+
+            if (char === 'ENTER') {
+                submitAnswer();
+                return;
+            }
+
+            if (char === '-' || char === '.') return;
+
+            if (fractionActiveField === 'num') {
+                setFractionNum(prev => (prev + char).slice(0, 3));
+            } else {
+                setFractionDen(prev => (prev + char).slice(0, 3));
+            }
+            return;
+        }
+
         if (char === 'DEL') {
             setInputValue(prev => prev.slice(0, -1));
         } else if (char === 'ENTER') {
@@ -734,6 +923,9 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
         setLargeMulDigitInput('');
         setLargeMulCarryInput('');
         setLargeMulActiveField('digit');
+        setFractionNum('');
+        setFractionDen('');
+        setFractionActiveField('num');
         setPendingStepCompletion(null);
         setDirectAnswer(null);
         setSelectedWordOperation(null);
@@ -857,6 +1049,9 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                 setLargeMulDigitInput('');
                 setLargeMulCarryInput('');
                 setLargeMulActiveField('digit');
+        setFractionNum('');
+        setFractionDen('');
+        setFractionActiveField('num');
                 setStatus('IDLE');
             }, 700);
             return;
@@ -1046,6 +1241,11 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
             return;
         }
 
+        if (isFractionAnswerProblem(currentProblem)) {
+            submitFractionAnswer();
+            return;
+        }
+
         const expectedWordOperation = getWordProblemOperation(currentProblem);
         if (guidedWarmup && !guidedWarmup.solved) {
             setFeedbackTitle('Najprv medzikrok:');
@@ -1108,6 +1308,29 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
         }
     };
 
+    const submitFractionAnswer = () => {
+        if (!currentProblem || !fractionNum || !fractionDen) return;
+        const answer = `${fractionNum}/${fractionDen}`;
+        const isCorrect = isAnswerCorrect(currentProblem, answer);
+
+        if (isCorrect) {
+            setStatus('CORRECT');
+            checkStreak(true);
+            const resultItem = { problem: currentProblem, userAnswer: answer, correct: true };
+            setResults(prev => [...prev, resultItem]);
+            setTimeout(() => nextProblem(resultItem), 1000);
+            return;
+        }
+
+        checkStreak(false);
+        if (isTestMode) {
+            recordWrongAndContinue(answer);
+            return;
+        }
+
+        showProgressiveHint(explainProblem(currentProblem));
+    };
+
     const submitDirectAnswer = (ans: number | string, label: string) => {
         if (!currentProblem || status !== 'IDLE') return;
         setDirectAnswer({ value: ans as any, label });
@@ -1158,6 +1381,13 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
             setLargeMulDigitInput('');
             setLargeMulCarryInput('');
             setLargeMulActiveField('digit');
+            return;
+        }
+
+        if (isFractionAnswerProblem(currentProblem)) {
+            setFractionNum('');
+            setFractionDen('');
+            setFractionActiveField('num');
             return;
         }
 
@@ -1245,6 +1475,8 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                 indianQuotientInput ? parseInt(indianQuotientInput, 10) : null,
                 indianRemainderInput ? parseInt(indianRemainderInput, 10) : null,
             )
+            : isFractionAnswerProblem(currentProblem)
+                ? createWrongResult(`${fractionNum}/${fractionDen}`)
             : wordIntermediateError && firstIntermediateStep
                 ? createWordIntermediateWrongResult(inputValue)
             : createWrongResult(wordOperationError && selectedWordOperation
@@ -1275,6 +1507,9 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
             setLargeMulDigitInput('');
             setLargeMulCarryInput('');
             setLargeMulActiveField('digit');
+        setFractionNum('');
+        setFractionDen('');
+        setFractionActiveField('num');
             setPendingStepCompletion(null);
             setDirectAnswer(null);
             setSelectedWordOperation(null);
@@ -1301,6 +1536,11 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
 
     const stepDivisionData = isStepDivisionProblem(currentProblem) ? getStepDivisionData(currentProblem)! : null;
     const largeMultiplicationData = isLargeMultiplicationProblem(currentProblem) ? currentProblem.largeMultiplication! : null;
+    const fractionAnswer = isFractionAnswerProblem(currentProblem);
+    const currentMeta = getProblemMetadata(currentProblem);
+    const fractionShape = currentMeta?.type === 'fraction_answer' ? currentMeta.shape : undefined;
+    const equalPartsMeta = currentMeta?.type === 'fraction_equal_parts' ? currentMeta : null;
+    const compareMeta = currentMeta?.type === 'fraction_compare' ? currentMeta : null;
     const isLongDivision = isLongDivisionProblem(currentProblem);
     const expectedWordOperation = getWordProblemOperation(currentProblem);
     const firstIntermediateStep = getFirstIntermediateStep(currentProblem);
@@ -1460,19 +1700,63 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                         {currentProblem.expression}
                                     </div>
                                 </>
+                            ) : equalPartsMeta ? (
+                                <>
+                                    <div style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '1.25rem', lineHeight: 1.25, padding: '0 1rem' }}>
+                                        {currentProblem.expression}
+                                    </div>
+                                    <div className="flex justify-center gap-3" style={{ flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                                        {equalPartsMeta.options.map((sizes, idx) => {
+                                            const letter = String.fromCharCode(65 + idx);
+                                            const selected = directAnswer?.value === idx;
+                                            const isCorrectOption = idx === equalPartsMeta.correctIndex;
+                                            const showResult = directAnswer != null;
+                                            const background = showResult && selected
+                                                ? isCorrectOption ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.28)'
+                                                : showResult && isCorrectOption
+                                                    ? 'rgba(34,197,94,0.3)'
+                                                    : 'rgba(255,255,255,0.08)';
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    className="btn"
+                                                    style={{ padding: '0.6rem', borderRadius: '0.9rem', background, display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem' }}
+                                                    onClick={() => submitDirectAnswer(idx, letter)}
+                                                    disabled={status !== 'IDLE'}
+                                                >
+                                                    <CircleDivisionView sizes={sizes} />
+                                                    <span style={{ color: '#93c5fd', fontWeight: 900, fontSize: '1.1rem' }}>{letter})</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </>
                             ) : (
-                                <div style={{
-                                    fontSize: currentProblem.kind === 'word_problem' ? '1.45rem' : currentProblem.expression.length > 15 ? '2rem' : currentProblem.expression.length > 10 ? '2.5rem' : '3.5rem',
-                                    fontWeight: 800,
-                                    marginBottom: '2rem',
-                                    lineHeight: 1.2,
-                                    padding: '0 1rem'
-                                }}>
-                                    {currentProblem.expression.replace(/\*/g, '×').replace(/\//g, '÷')}
-                                </div>
+                                <>
+                                    {fractionShape && (
+                                        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                                            <FractionShapeView shape={fractionShape} />
+                                        </div>
+                                    )}
+                                    {compareMeta && (
+                                        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                                            <FractionCompareBars leftNum={compareMeta.leftNum} leftDen={compareMeta.leftDen} rightNum={compareMeta.rightNum} rightDen={compareMeta.rightDen} />
+                                        </div>
+                                    )}
+                                    <div style={{
+                                        fontSize: currentProblem.kind === 'word_problem' ? '1.45rem' : currentProblem.expression.length > 15 ? '2rem' : currentProblem.expression.length > 10 ? '2.5rem' : '3.5rem',
+                                        fontWeight: 800,
+                                        marginBottom: '2rem',
+                                        lineHeight: 1.2,
+                                        padding: '0 1rem'
+                                    }}>
+                                        {currentProblem.expression.replace(/\*/g, '×').replace(/\//g, '÷')}
+                                    </div>
+                                </>
                             )}
 
-                            {!isYesNoProblem(currentProblem) && !isFirstSecondProblem(currentProblem) && (
+                            {!isYesNoProblem(currentProblem) && !isFirstSecondProblem(currentProblem) && !equalPartsMeta && (
                                 <>
                                     {guidedWarmup && (
                                         <div
@@ -1601,6 +1885,15 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                         </div>
                                     )}
                                     {(!guidedWarmup || guidedWarmup.solved) && (!expectedWordOperation || selectedWordOperation === expectedWordOperation) && (
+                                        fractionAnswer ? (
+                                            <FractionAnswerInput
+                                                numerator={fractionNum}
+                                                denominator={fractionDen}
+                                                activeField={fractionActiveField}
+                                                onSelect={setFractionActiveField}
+                                                status={status}
+                                            />
+                                        ) : (
                                         <div
                                             style={{
                                                 minWidth: '160px',
@@ -1630,6 +1923,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                                 {inputValue || '?'}
                                             </div>
                                         </div>
+                                        )
                                     )}
                                     {isSolvingWordIntermediate && (
                                         <div style={{ color: '#cbd5e1', fontSize: '0.9rem', marginTop: '0.5rem' }}>
@@ -1741,7 +2035,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                 </AnimatePresence>
             </div>
 
-            {isLogicalSequenceProblem(currentProblem) && effectiveDirectAnswers ? (
+            {equalPartsMeta ? null : isLogicalSequenceProblem(currentProblem) && effectiveDirectAnswers ? (
                 <div className="game-keypad flex gap-4 w-full flex-wrap justify-center" style={{ maxWidth: '600px', marginTop: '1rem' }}>
                     {logicalVisual
                         ? logicalVisual.options.map((option: VisualSequenceOption) => (
@@ -1835,6 +2129,27 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                     {indianActiveField === 'quotient' ? (isLongDivision ? 'zv' : '#') : (isLongDivision ? 'cif' : '?')}
                                 </button>
                             )}
+                            <button
+                                className="btn btn-primary keypad-btn keypad-submit col-span-3"
+                                onClick={() => handleInput('ENTER')}
+                            >
+                                Potvrdiť <CornerDownLeft className="ml-2" />
+                            </button>
+                        </>
+                    ) : fractionAnswer ? (
+                        <>
+                            <button className="btn keypad-btn text-red-400" onClick={() => handleInput('DEL')}>
+                                <Delete size={24} />
+                            </button>
+                            <button className="btn keypad-btn" onClick={() => handleInput('0')}>
+                                0
+                            </button>
+                            <button
+                                className="btn keypad-btn"
+                                onClick={() => setFractionActiveField(prev => prev === 'num' ? 'den' : 'num')}
+                            >
+                                {fractionActiveField === 'num' ? 'menov' : 'čit'}
+                            </button>
                             <button
                                 className="btn btn-primary keypad-btn keypad-submit col-span-3"
                                 onClick={() => handleInput('ENTER')}

@@ -229,6 +229,18 @@ export interface Profile {
 
 export type WordProblemBaseTopic = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'comparison' | 'multistep' | 'units';
 
+// Kontext pre úlohu "zlomok z počtu" — mení len slovné zadanie, výpočet je rovnaký.
+export type FractionQuantityContext = 'generic' | 'sharing' | 'chocolate' | 'students' | 'pizza';
+
+// Kontext pre úlohu, kde žiak zadáva zlomok (čitateľ/menovateľ) ako odpoveď.
+export type FractionAnswerContext = 'time' | 'set' | 'shape';
+
+// Vyfarbený útvar v zadaní — žiak z neho prečíta zlomok.
+export type FractionShape =
+    | { kind: 'bar'; parts: number; shaded: number }
+    | { kind: 'grid'; rows: number; cols: number; shaded: number }
+    | { kind: 'circle'; parts: number; shaded: number };
+
 export type VisualSequenceGrid = 'x' | 'quadrants';
 export type VisualSequenceRedLine = 'right' | 'down' | 'left' | 'diagDown' | 'diagUp';
 export type VisualSequenceDot = 'topLeft' | 'topCenter' | 'topRight' | 'centerLeft' | 'center' | 'centerRight' | 'bottomLeft' | 'bottomCenter' | 'bottomRight';
@@ -261,6 +273,10 @@ export type ProblemMetadata =
     | { type: 'fraction_denominator'; denominator: number }
     | { type: 'fraction_name'; label: 'polovica' | 'tretina' | 'štvrtina' }
     | { type: 'fraction_compare'; leftNum: number; leftDen: number; rightNum: number; rightDen: number }
+    | { type: 'fraction_of_quantity'; numerator: number; denominator: number; whole: number; context: FractionQuantityContext }
+    | { type: 'fraction_of_time'; numerator: number; denominator: number }
+    | { type: 'fraction_answer'; numerator: number; denominator: number; context: FractionAnswerContext; shape?: FractionShape }
+    | { type: 'fraction_equal_parts'; parts: number; options: number[][]; correctIndex: number }
     | { type: 'indian_division' }
     | { type: 'long_division' }
     | { type: 'word_problem'; baseTopic?: WordProblemBaseTopic }
@@ -333,6 +349,11 @@ export type ErrorDiagnosisCode =
     | 'multiple_order'
     | 'divisor_remainder'
     | 'fraction_parts'
+    | 'fraction_of_quantity'
+    | 'fraction_of_time'
+    | 'fraction_answer'
+    | 'fraction_equal_parts'
+    | 'fraction_equal_parts'
     | 'number_comparison_choice'
     | 'rounding_direction'
     | 'unit_conversion_direction'

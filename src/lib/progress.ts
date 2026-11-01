@@ -370,6 +370,32 @@ const recommendedForDiagnosis = (code: ErrorDiagnosisCode): Problem[] => {
                 createProblem('Zlomok: celok je rozdelený na 8 rovnakých častí. Aký je menovateľ?', 8),
                 createProblem('Zlomok: čo je väčšie 3/6 alebo 2/6? 1=prvý, 0=druhý', 1),
             ];
+        case 'fraction_of_quantity':
+            return [
+                { ...createProblem('Koľko je 1⁄3 z čísla 18?', 6), metadata: { type: 'fraction_of_quantity', numerator: 1, denominator: 3, whole: 18, context: 'generic' } },
+                { ...createProblem('Koľko je 2⁄3 z čísla 18?', 12), metadata: { type: 'fraction_of_quantity', numerator: 2, denominator: 3, whole: 18, context: 'generic' } },
+                { ...createProblem('Čokoláda má 24 kociek. Koľko kociek tvorí 3⁄4 čokolády?', 18), metadata: { type: 'fraction_of_quantity', numerator: 3, denominator: 4, whole: 24, context: 'chocolate' } },
+                { ...createProblem('Koľko je 1⁄4 z čísla 20?', 5), metadata: { type: 'fraction_of_quantity', numerator: 1, denominator: 4, whole: 20, context: 'generic' } },
+            ];
+        case 'fraction_of_time':
+            return [
+                { ...createProblem('Koľko minút je 1⁄4 hodiny?', 15), metadata: { type: 'fraction_of_time', numerator: 1, denominator: 4 } },
+                { ...createProblem('Koľko minút je 1⁄3 hodiny?', 20), metadata: { type: 'fraction_of_time', numerator: 1, denominator: 3 } },
+                { ...createProblem('Koľko minút je 2⁄3 hodiny?', 40), metadata: { type: 'fraction_of_time', numerator: 2, denominator: 3 } },
+                { ...createProblem('Koľko minút je 1⁄2 hodiny?', 30), metadata: { type: 'fraction_of_time', numerator: 1, denominator: 2 } },
+            ];
+        case 'fraction_answer':
+            return [
+                { ...createProblem('Akú časť hodiny tvorí 15 minút?', 15 / 60), metadata: { type: 'fraction_answer', numerator: 15, denominator: 60, context: 'time' } },
+                { ...createProblem('Akú časť hodiny tvorí 20 minút?', 20 / 60), metadata: { type: 'fraction_answer', numerator: 20, denominator: 60, context: 'time' } },
+                { ...createProblem('Z 6 dlaždíc sú 2 žlté. Akú časť tvoria žlté?', 2 / 6), metadata: { type: 'fraction_answer', numerator: 2, denominator: 6, context: 'set' } },
+                { ...createProblem('Z 4 guľôčok je 1 modrá. Akú časť tvoria modré?', 1 / 4), metadata: { type: 'fraction_answer', numerator: 1, denominator: 4, context: 'set' } },
+            ];
+        case 'fraction_equal_parts':
+            return [
+                { ...createProblem('Ktoré rozdelenie kruhu na 3 rovnakých častí je správne?', 0), metadata: { type: 'fraction_equal_parts', parts: 3, options: [[120, 120, 120], [150, 120, 90], [90, 150, 120]], correctIndex: 0 } },
+                { ...createProblem('Ktoré rozdelenie kruhu na 4 rovnakých častí je správne?', 1), metadata: { type: 'fraction_equal_parts', parts: 4, options: [[120, 90, 90, 60], [90, 90, 90, 90], [60, 120, 90, 90]], correctIndex: 1 } },
+            ];
         case 'number_comparison_choice':
             return [
                 createProblem('Ktoré číslo je väčšie: 48 alebo 52? 1=prvý, 0=druhý', 0),

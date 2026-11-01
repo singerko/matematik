@@ -1,4 +1,4 @@
-import { type Constraints, type Problem, type MathOperation, type ProblemMetadata, type SchoolTopic, type UnitConversionCategory, type VisualSequenceFrame, type VisualSequenceOption, type WordProblemBaseTopic } from './types';
+import { type Constraints, type FractionQuantityContext, type Problem, type MathOperation, type ProblemMetadata, type SchoolTopic, type UnitConversionCategory, type VisualSequenceFrame, type VisualSequenceOption, type WordProblemBaseTopic } from './types';
 import { arabicToRoman } from './romanNumerals';
 import { getMultiplicationTableFromTopic, isMultiplicationTableTopic } from './schoolRules';
 
@@ -809,10 +809,41 @@ const generateMultiplesDivisorsProblem = (): Problem => {
     };
 };
 
+// Zlomok zapíšeme lomkou U+2044 (⁄), nie ASCII '/', aby ho zobrazenie nenahradilo za ÷.
+const formatFraction = (numerator: number, denominator: number) => `${numerator}⁄${denominator}`;
+
 const generateFractionIntroProblem = (): Problem => {
     const denominator = randomChoice([2, 3, 4, 5, 6, 8]);
     const numerator = randomInt(1, denominator - 1);
-    const mode = randomChoice(['numerator', 'denominator', 'name', 'compare'] as const);
+    // Výpočtové typy (zlomok z počtu, zlomok hodiny) sú jadro učebnice — majú väčšiu váhu.
+    const mode = randomChoice([
+        'quantity', 'quantity', 'quantity',
+        'time', 'time',
+        'answer_part', 'answer_part',
+        'answer_time',
+        'equal_parts',
+        'compare', 'name', 'denominator', 'numerator',
+    ] as const);
+
+    if (mode === 'quantity') {
+        return generateFractionOfQuantityProblem();
+    }
+
+    if (mode === 'time') {
+        return generateFractionOfTimeProblem();
+    }
+
+    if (mode === 'answer_part') {
+        return randomChoice([true, false]) ? generateFractionAnswerShapeProblem() : generateFractionAnswerSetProblem();
+    }
+
+    if (mode === 'answer_time') {
+        return generateFractionAnswerTimeProblem();
+    }
+
+    if (mode === 'equal_parts') {
+        return generateFractionEqualPartsProblem();
+    }
 
     if (mode === 'denominator') {
         return {
@@ -842,22 +873,7 @@ const generateFractionIntroProblem = (): Problem => {
     }
 
     if (mode === 'compare') {
-        const left = randomInt(1, denominator - 1);
-        let right = randomInt(1, denominator - 1);
-        if (right === left) right = Math.max(1, Math.min(denominator - 1, right + (right + 1 < denominator ? 1 : -1)));
-        const result = left > right ? 1 : 0;
-        return {
-            id: uniqueId(),
-            kind: 'standard',
-            expression: `Zlomok: čo je väčšie ${left}/${denominator} alebo ${right}/${denominator}? 1=prvý, 0=druhý`,
-            result,
-            steps: [
-                `Menovateľ je rovnaký: ${denominator}.`,
-                `Porovnáme čitateľov: ${left} a ${right}.`,
-                result === 1 ? `Väčší je prvý zlomok ${left}/${denominator}.` : `Väčší je druhý zlomok ${right}/${denominator}.`,
-            ],
-            metadata: { type: 'fraction_compare', leftNum: left, leftDen: denominator, rightNum: right, rightDen: denominator },
-        };
+        return generateFractionCompareProblem();
     }
 
     return {
@@ -867,6 +883,225 @@ const generateFractionIntroProblem = (): Problem => {
         result: numerator,
         steps: [`Čitateľ hovorí, koľko častí je vyfarbených: ${numerator}.`],
         metadata: { type: 'fraction_numerator', denominator, numerator },
+    };
+};
+
+// Porovnanie dvoch zlomkov (aj s rôznym menovateľom) — žiak sa oprie o obrázok (stena zlomkov).
+const generateFractionCompareProblem = (): Problem => {
+    const pool = [2, 3, 4, 5, 6, 8];
+    const sameDenominator = Math.random() < 0.4;
+    let leftDen = randomChoice(pool);
+    let rightDen = sameDenominator ? leftDen : randomChoice(pool);
+    let leftNum = randomInt(1, leftDen - 1);
+    let rightNum = randomInt(1, rightDen - 1);
+    // Zabráň rovnakej hodnote (napr. 1/2 = 2/4) — porovnanie musí mať jednoznačnú odpoveď.
+    let guard = 0;
+    while (leftNum * rightDen === rightNum * leftDen && guard++ < 20) {
+        leftDen = randomChoice(pool);
+        rightDen = sameDenominator ? leftDen : randomChoice(pool);
+        leftNum = randomInt(1, leftDen - 1);
+        rightNum = randomInt(1, rightDen - 1);
+    }
+
+    const result = leftNum * rightDen > rightNum * leftDen ? 1 : 0;
+    const steps = leftDen === rightDen
+        ? [
+            `Menovateľ je rovnaký (${leftDen}), tak porovnáme čitateľov: ${leftNum} a ${rightNum}.`,
+            result === 1 ? `Väčší je prvý zlomok ${leftNum}⁄${leftDen}.` : `Väčší je druhý zlomok ${rightNum}⁄${rightDen}.`,
+        ]
+        : [
+            `Menovatele sú rôzne — pomôž si obrázkom, ktorý zlomok zaberá väčšiu časť celku.`,
+            `${leftNum}⁄${leftDen} ${result === 1 ? '>' : '<'} ${rightNum}⁄${rightDen}.`,
+            result === 1 ? `Väčší je prvý zlomok.` : `Väčší je druhý zlomok.`,
+        ];
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Ktorý zlomok je väčší: ${leftNum}⁄${leftDen} alebo ${rightNum}⁄${rightDen}? 1=prvý, 0=druhý`,
+        result,
+        steps,
+        metadata: { type: 'fraction_compare', leftNum, leftDen, rightNum, rightDen },
+    };
+};
+
+// Zlomok z počtu: "Koľko je 2⁄3 z 18?" → najprv celok vydelíme menovateľom, potom násobíme čitateľom.
+const generateFractionOfQuantityProblem = (): Problem => {
+    const context = randomChoice<FractionQuantityContext>(['generic', 'sharing', 'chocolate', 'students', 'pizza']);
+    const denominator = randomChoice([2, 3, 4, 5, 6]);
+    const perPart = randomInt(2, 6);
+    const whole = denominator * perPart;
+    // Pri delení na rovnaké časti (sharing) sa pýtame na jeden diel → čitateľ 1.
+    const numerator = context === 'sharing' ? 1 : randomInt(1, denominator - 1);
+    const result = perPart * numerator;
+    const frac = formatFraction(numerator, denominator);
+
+    const expression = (() => {
+        switch (context) {
+            case 'sharing':
+                return `Spravodlivo rozdelíme ${whole} banánov medzi ${denominator} kamarátov. Koľko dostane každý?`;
+            case 'chocolate':
+                return `Čokoláda má ${whole} kociek. Koľko kociek tvorí ${frac} čokolády?`;
+            case 'students':
+                return `V triede je ${whole} žiakov. ${frac} z nich nosí okuliare. Koľko je to žiakov?`;
+            case 'pizza':
+                return `Pizza má ${whole} rovnakých kúskov. Koľko kúskov je ${frac} pizze?`;
+            default:
+                return `Koľko je ${frac} z čísla ${whole}?`;
+        }
+    })();
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression,
+        result,
+        steps: [
+            `Celok rozdelíme na ${denominator} rovnakých častí: ${whole} : ${denominator} = ${perPart}.`,
+            numerator === 1
+                ? `Jedna časť je ${perPart}.`
+                : `Vezmeme ${numerator} také časti: ${perPart} × ${numerator} = ${result}.`,
+        ],
+        metadata: { type: 'fraction_of_quantity', numerator, denominator, whole, context },
+    };
+};
+
+// Zlomok hodiny v minútach: hodina má 60 minút, 1⁄4 hodiny = 60 : 4 = 15 minút.
+const generateFractionOfTimeProblem = (): Problem => {
+    const denominator = randomChoice([2, 3, 4, 5, 6]);
+    const numerator = randomInt(1, denominator - 1);
+    const perPart = 60 / denominator;
+    const result = perPart * numerator;
+    const frac = formatFraction(numerator, denominator);
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Koľko minút je ${frac} hodiny?`,
+        result,
+        steps: [
+            `Hodina má 60 minút.`,
+            `Jedna ${denominator}-tina hodiny je 60 : ${denominator} = ${perPart} minút.`,
+            numerator === 1
+                ? `${frac} hodiny je ${perPart} minút.`
+                : `${frac} hodiny je ${perPart} × ${numerator} = ${result} minút.`,
+        ],
+        metadata: { type: 'fraction_of_time', numerator, denominator },
+    };
+};
+
+// Odpoveď je zlomok: "Z 6 dlaždíc sú 2 žlté. Akú časť tvoria žlté?" → žiak zadá 2/6.
+const generateFractionAnswerSetProblem = (): Problem => {
+    const total = randomInt(3, 8);
+    const part = randomInt(1, total - 1);
+    const theme = randomChoice([
+        { noun: 'dlaždíc', color: randomChoice(['žlté', 'modré', 'zelené']) },
+        { noun: 'guľôčok', color: randomChoice(['červené', 'modré', 'zelené']) },
+        { noun: 'políčok', color: randomChoice(['žlté', 'modré']) },
+    ]);
+
+    const verb = part === 1 ? 'je' : 'sú';
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Z ${total} ${theme.noun} ${verb} ${part} ${theme.color}. Akú časť tvoria ${theme.color}?`,
+        result: part / total,
+        steps: [
+            `Všetkých častí je ${total} → menovateľ.`,
+            `Vybraných (${theme.color}) je ${part} → čitateľ.`,
+            `Odpoveď je ${part}/${total}.`,
+        ],
+        metadata: { type: 'fraction_answer', numerator: part, denominator: total, context: 'set' },
+    };
+};
+
+// Odpoveď je zlomok: "Akú časť hodiny tvorí 15 minút?" → žiak zadá 15/60 (alebo skrátene 1/4).
+const generateFractionAnswerTimeProblem = (): Problem => {
+    const denominator = randomChoice([2, 3, 4, 5, 6]);
+    const numerator = randomInt(1, denominator - 1);
+    const minutes = (60 / denominator) * numerator;
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Akú časť hodiny tvorí ${minutes} minút?`,
+        result: minutes / 60,
+        steps: [
+            `Celá hodina má 60 minút → menovateľ 60.`,
+            `Počet minút je čitateľ → ${minutes}.`,
+            `Odpoveď je ${minutes}/60 (skrátene ${numerator}/${denominator}).`,
+        ],
+        metadata: { type: 'fraction_answer', numerator: minutes, denominator: 60, context: 'time' },
+    };
+};
+
+// Odpoveď je zlomok prečítaný z vyfarbeného útvaru v zadaní.
+const generateFractionAnswerShapeProblem = (): Problem => {
+    const shape = (() => {
+        const kind = randomChoice(['bar', 'grid', 'circle'] as const);
+        if (kind === 'grid') {
+            const rows = randomInt(2, 3);
+            const cols = randomInt(2, 4);
+            const total = rows * cols;
+            return { kind: 'grid' as const, rows, cols, shaded: randomInt(1, total - 1), total };
+        }
+        if (kind === 'circle') {
+            const parts = randomChoice([2, 3, 4, 6, 8]);
+            return { kind: 'circle' as const, parts, shaded: randomInt(1, parts - 1), total: parts };
+        }
+        const parts = randomInt(2, 8);
+        return { kind: 'bar' as const, parts, shaded: randomInt(1, parts - 1), total: parts };
+    })();
+
+    const { total, ...shapeMeta } = shape;
+    const shaded = shape.shaded;
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Akú časť obrázka je vyfarbená?`,
+        result: shaded / total,
+        steps: [
+            `Útvar je rozdelený na ${total} rovnakých častí → menovateľ ${total}.`,
+            `Vyfarbených je ${shaded} častí → čitateľ ${shaded}.`,
+            `Odpoveď je ${shaded}/${total}.`,
+        ],
+        metadata: { type: 'fraction_answer', numerator: shaded, denominator: total, context: 'shape', shape: shapeMeta },
+    };
+};
+
+// "Ktoré rozdelenie kruhu na N rovnakých častí je správne?" — porovnanie rovnosti dielov.
+const generateFractionEqualPartsProblem = (): Problem => {
+    const parts = randomChoice([3, 4]);
+    const base = 360 / parts;
+
+    const makeUnequal = (): number[] => {
+        const arr = Array<number>(parts).fill(base);
+        const delta = randomChoice([20, 30, 40]);
+        const i = randomInt(0, parts - 1);
+        let j = randomInt(0, parts - 1);
+        while (j === i) j = randomInt(0, parts - 1);
+        arr[i] += delta;
+        arr[j] -= delta;
+        return arr;
+    };
+
+    const correctIndex = randomInt(0, 2);
+    const options: number[][] = [];
+    for (let k = 0; k < 3; k++) {
+        options.push(k === correctIndex ? Array<number>(parts).fill(base) : makeUnequal());
+    }
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Ktoré rozdelenie kruhu na ${parts} rovnakých častí je správne?`,
+        result: correctIndex,
+        steps: [
+            `Na ${parts} rovnakých častí znamená, že všetky kúsky sú rovnako veľké.`,
+            `Správny je obrázok ${String.fromCharCode(65 + correctIndex)}, kde sú všetky časti rovnaké.`,
+        ],
+        metadata: { type: 'fraction_equal_parts', parts, options, correctIndex },
     };
 };
 

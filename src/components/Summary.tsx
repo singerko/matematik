@@ -79,6 +79,10 @@ const Summary: React.FC<Props> = ({ results, onBack, onPracticeRecommended }) =>
             return metadata.roman;
         }
 
+        if (metadata?.type === 'fraction_answer') {
+            return `${metadata.numerator}/${metadata.denominator}`;
+        }
+
         if (problem.kind === 'indian_division' && problem.indianDivision) {
             return problem.indianDivision.allowFinalRemainder
                 ? `výsledok ${problem.indianDivision.quotient}, zvyšok ${problem.indianDivision.remainder}`

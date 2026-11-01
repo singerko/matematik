@@ -34,8 +34,29 @@ export const toNumericAnswer = (answer: number | string) => {
     return Number.isNaN(parsed) ? null : parsed;
 };
 
+// Zlomková odpoveď príde ako reťazec "čitateľ/menovateľ" (napr. "15/60").
+export const parseFractionAnswer = (answer: number | string): { num: number; den: number } | null => {
+    if (typeof answer !== 'string') return null;
+    const match = answer.trim().match(/^(\d+)\/(\d+)$/);
+    if (!match) return null;
+    const num = Number(match[1]);
+    const den = Number(match[2]);
+    if (den === 0) return null;
+    return { num, den };
+};
+
+// Správne je akékoľvek ekvivalentné vyjadrenie: 1/4 = 2/8 = 15/60 (porovnáme krížovým násobením).
+export const isFractionAnswerCorrect = (expectedNum: number, expectedDen: number, answer: number | string): boolean => {
+    const parsed = parseFractionAnswer(answer);
+    if (!parsed) return false;
+    return parsed.num * expectedDen === parsed.den * expectedNum;
+};
+
 export const isAnswerCorrect = (problem: Problem, userAnswer: number | string): boolean => {
     const metadata = getProblemMetadata(problem);
+    if (metadata?.type === 'fraction_answer') {
+        return isFractionAnswerCorrect(metadata.numerator, metadata.denominator, userAnswer);
+    }
     if (metadata?.type === 'arabic_to_roman') {
         return typeof userAnswer === 'string' && normalizeRomanAnswer(userAnswer) === metadata.roman;
     }
@@ -481,17 +502,117 @@ const explainByMetadata = (problem: Problem, metadata: ProblemMetadata): Problem
             };
         }
         case 'fraction_compare': {
-            const { leftNum, leftDen, rightNum } = metadata;
-            const result = leftNum > rightNum ? 1 : 0;
+            const { leftNum, leftDen, rightNum, rightDen } = metadata;
+            const result = leftNum * rightDen > rightNum * leftDen ? 1 : 0;
+            if (leftDen === rightDen) {
+                return {
+                    topic: 'porovnavanie zlomkov',
+                    hint: `Menovateľ je rovnaký (${leftDen}), preto porovnaj čitateľov ${leftNum} a ${rightNum}.`,
+                    steps: [
+                        `${leftNum}⁄${leftDen} a ${rightNum}⁄${rightDen} majú rovnaký menovateľ.`,
+                        `Väčší čitateľ znamená väčší zlomok.`,
+                        result === 1 ? 'Väčší je prvý zlomok.' : 'Väčší je druhý zlomok.',
+                    ],
+                    recommendation: 'Precvič porovnávanie zlomkov s rovnakým menovateľom.',
+                };
+            }
             return {
                 topic: 'porovnavanie zlomkov',
-                hint: `Menovateľ je rovnaký (${leftDen}), preto porovnaj čitateľov ${leftNum} a ${rightNum}.`,
-                steps: [
-                    `${leftNum}/${leftDen} a ${rightNum}/${leftDen} majú rovnaký menovateľ.`,
-                    `Väčší čitateľ znamená väčší zlomok.`,
-                    result === 1 ? 'Väčší je prvý zlomok.' : 'Väčší je druhý zlomok.',
+                hint: `Menovatele sú rôzne. Predstav si oba zlomky ako vyfarbené pruhy a pozri, ktorý zaberá väčšiu časť.`,
+                hints: [
+                    { id: 'bars', title: 'obrázok', text: `Nakresli dva rovnako dlhé pruhy. Prvý rozdeľ na ${leftDen} častí a vyfarbi ${leftNum}, druhý na ${rightDen} častí a vyfarbi ${rightNum}.` },
+                    { id: 'unit', title: 'veľkosť dielika', text: `Čím väčší menovateľ, tým menšie sú dieliky. Porovnaj, ktorý vyfarbený kus je dlhší.` },
                 ],
-                recommendation: 'Precvič porovnávanie zlomkov s rovnakým menovateľom.',
+                steps: [
+                    `${leftNum}⁄${leftDen} a ${rightNum}⁄${rightDen} majú rôzny menovateľ.`,
+                    `Porovnaj ich veľkosť pomocou obrázka (pruhov).`,
+                    `${leftNum}⁄${leftDen} ${result === 1 ? '>' : '<'} ${rightNum}⁄${rightDen}, ${result === 1 ? 'väčší je prvý' : 'väčší je druhý'} zlomok.`,
+                ],
+                recommendation: 'Precvič porovnávanie zlomkov s rôznym menovateľom pomocou obrázka.',
+            };
+        }
+        case 'fraction_of_quantity': {
+            const { numerator, denominator, whole } = metadata;
+            const perPart = whole / denominator;
+            const result = perPart * numerator;
+            return {
+                topic: 'zlomok z počtu',
+                hint: `Najprv celok ${whole} rozdeľ na ${denominator} rovnakých častí. Potom vezmi ${numerator} z nich.`,
+                hints: [
+                    { id: 'divide', title: 'rozdeľ celok', text: `${whole} : ${denominator} = ${perPart}. Toľko je jedna časť.` },
+                    { id: 'take', title: 'vezmi časti', text: numerator === 1 ? `Hľadáme jednu časť, čiže ${perPart}.` : `${perPart} × ${numerator} = ${result}. Toľko je ${numerator} častí.` },
+                ],
+                steps: [
+                    `Celok rozdelíme na ${denominator} rovnakých častí: ${whole} : ${denominator} = ${perPart}.`,
+                    numerator === 1 ? `Jedna časť je ${perPart}.` : `Vezmeme ${numerator} časti: ${perPart} × ${numerator} = ${result}.`,
+                ],
+                recommendation: 'Precvič počítanie zlomku z počtu (najprv deliť, potom násobiť).',
+            };
+        }
+        case 'fraction_of_time': {
+            const { numerator, denominator } = metadata;
+            const perPart = 60 / denominator;
+            const result = perPart * numerator;
+            return {
+                topic: 'zlomky a čas',
+                hint: `Hodina má 60 minút. Rozdeľ 60 na ${denominator} častí a vezmi ${numerator}.`,
+                hints: [
+                    { id: 'hour', title: 'hodina = 60 min', text: `60 : ${denominator} = ${perPart} minút je jedna ${denominator}-tina hodiny.` },
+                    { id: 'take', title: 'vezmi časti', text: numerator === 1 ? `Hľadáme jednu časť, čiže ${perPart} minút.` : `${perPart} × ${numerator} = ${result} minút.` },
+                ],
+                steps: [
+                    `Hodina má 60 minút.`,
+                    `60 : ${denominator} = ${perPart} minút je jedna ${denominator}-tina hodiny.`,
+                    numerator === 1 ? `Výsledok je ${perPart} minút.` : `${perPart} × ${numerator} = ${result} minút.`,
+                ],
+                recommendation: 'Precvič premenu zlomku hodiny na minúty.',
+            };
+        }
+        case 'fraction_answer': {
+            const { numerator, denominator, context } = metadata;
+            if (context === 'time') {
+                return {
+                    topic: 'zlomky a čas',
+                    hint: `Hodina má 60 minút. Čitateľ je počet minút, menovateľ je 60.`,
+                    hints: [
+                        { id: 'den', title: 'menovateľ', text: `Celok je celá hodina = 60 minút, takže menovateľ je 60.` },
+                        { id: 'num', title: 'čitateľ', text: `Čitateľ je počet minút, čiže ${numerator}. Zlomok ${numerator}/60 môžeš aj skrátiť.` },
+                    ],
+                    steps: [
+                        `Celok je 60 minút → menovateľ 60.`,
+                        `Počet minút je čitateľ → ${numerator}.`,
+                        `Odpoveď je ${numerator}/60 (alebo skrátene).`,
+                    ],
+                    recommendation: 'Precvič zapísanie času ako zlomku hodiny.',
+                };
+            }
+            return {
+                topic: 'časť celku',
+                hint: `Menovateľ je počet všetkých častí, čitateľ je počet vybraných častí.`,
+                hints: [
+                    { id: 'den', title: 'menovateľ', text: `Spočítaj všetky rovnaké časti: ${denominator}. To je menovateľ.` },
+                    { id: 'num', title: 'čitateľ', text: `Spočítaj vybrané časti: ${numerator}. To je čitateľ.` },
+                ],
+                steps: [
+                    `Všetkých rovnakých častí je ${denominator} → menovateľ.`,
+                    `Vybraných častí je ${numerator} → čitateľ.`,
+                    `Odpoveď je ${numerator}/${denominator}.`,
+                ],
+                recommendation: 'Precvič zápis časti celku ako zlomku.',
+            };
+        }
+        case 'fraction_equal_parts': {
+            const { parts, correctIndex } = metadata;
+            const letter = String.fromCharCode(65 + correctIndex);
+            return {
+                topic: 'rovnaké časti',
+                hint: `Na ${parts} rovnakých častí znamená, že všetky kúsky musia byť rovnako veľké.`,
+                steps: [
+                    `Zlomok vzniká len z rovnako veľkých častí.`,
+                    `Porovnaj veľkosť kúskov v každom obrázku.`,
+                    `Správny je obrázok ${letter} — má ${parts} rovnakých častí.`,
+                ],
+                recommendation: 'Precvič rozpoznávanie rozdelenia na rovnaké časti.',
             };
         }
         case 'number_comparison': {
@@ -853,14 +974,60 @@ export const diagnoseAnswer = (problem: Problem, userAnswer: number | string): s
                 return `${label} znamená, že celok je rozdelený na ${denominator} rovnaké časti. Menovateľ je ${denominator}.`;
             }
             case 'fraction_compare': {
-                const { leftNum, leftDen, rightNum } = metadata;
-                const expected = leftNum > rightNum ? 1 : 0;
+                const { leftNum, leftDen, rightNum, rightDen } = metadata;
+                const expected = leftNum * rightDen > rightNum * leftDen ? 1 : 0;
                 if (numericAnswer !== null && numericAnswer !== 0 && numericAnswer !== 1) {
                     return 'Tu vyberáme prvý alebo druhý zlomok. Odpovedz 1 pre prvý alebo 0 pre druhý.';
                 }
-                return expected === 1
-                    ? `Menovateľ je rovnaký (${leftDen}), porovnávame čitateľov. ${leftNum} > ${rightNum}, preto je väčší prvý zlomok.`
-                    : `Menovateľ je rovnaký (${leftDen}), porovnávame čitateľov. ${rightNum} > ${leftNum}, preto je väčší druhý zlomok.`;
+                if (leftDen === rightDen) {
+                    return expected === 1
+                        ? `Menovateľ je rovnaký (${leftDen}), porovnávame čitateľov. ${leftNum} > ${rightNum}, preto je väčší prvý zlomok.`
+                        : `Menovateľ je rovnaký (${leftDen}), porovnávame čitateľov. ${rightNum} > ${leftNum}, preto je väčší druhý zlomok.`;
+                }
+                return `Menovatele sú rôzne — porovnaj veľkosť z obrázka. ${leftNum}⁄${leftDen} ${expected === 1 ? '>' : '<'} ${rightNum}⁄${rightDen}, väčší je ${expected === 1 ? 'prvý' : 'druhý'} zlomok.`;
+            }
+            case 'fraction_of_quantity': {
+                const { numerator, denominator, whole } = metadata;
+                const perPart = whole / denominator;
+                const result = perPart * numerator;
+                if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
+                if (numericAnswer === perPart && numerator !== 1) {
+                    return `Vypočítal si len jednu časť (${whole} : ${denominator} = ${perPart}). Treba vziať ${numerator} také časti: ${perPart} × ${numerator} = ${result}.`;
+                }
+                if (numericAnswer === whole - result) {
+                    return `Zvyšok celku je ${whole - result}, ale pýtame sa na ${numerator} z ${denominator} častí, čiže ${result}.`;
+                }
+                return `Najprv ${whole} : ${denominator} = ${perPart}, potom × ${numerator} = ${result}.`;
+            }
+            case 'fraction_of_time': {
+                const { numerator, denominator } = metadata;
+                const perPart = 60 / denominator;
+                const result = perPart * numerator;
+                if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
+                if (numericAnswer === perPart && numerator !== 1) {
+                    return `To je jedna ${denominator}-tina hodiny. My chceme ${numerator} také časti: ${perPart} × ${numerator} = ${result} minút.`;
+                }
+                return `Hodina má 60 minút. 60 : ${denominator} = ${perPart}, potom × ${numerator} = ${result} minút.`;
+            }
+            case 'fraction_answer': {
+                const { numerator, denominator, context } = metadata;
+                const parsed = parseFractionAnswer(userAnswer);
+                if (!parsed) return 'Zadaj čitateľ aj menovateľ zlomku.';
+                if (context === 'time') {
+                    if (parsed.den !== 60 && parsed.num === numerator) {
+                        return `Čitateľ máš dobre, ale menovateľ je celá hodina = 60 minút. Správne je ${numerator}/60.`;
+                    }
+                    return `Celá hodina má 60 minút (menovateľ), počet minút je čitateľ: ${numerator}/60.`;
+                }
+                if (parsed.num === denominator && parsed.den === numerator) {
+                    return `Máš prehodený čitateľ a menovateľ. Hore patrí počet vybraných častí (${numerator}), dole počet všetkých (${denominator}).`;
+                }
+                return `Menovateľ je počet všetkých častí (${denominator}), čitateľ je počet vybraných (${numerator}).`;
+            }
+            case 'fraction_equal_parts': {
+                const { parts, correctIndex } = metadata;
+                const letter = String.fromCharCode(65 + correctIndex);
+                return `Zlomok potrebuje rovnako veľké časti. Správny je obrázok ${letter}, kde je ${parts} rovnakých kúskov.`;
             }
             case 'order_operations': {
                 const { hasParentheses, a, b, c } = metadata;
@@ -977,6 +1144,10 @@ const DIAGNOSIS_LABELS: Record<ErrorDiagnosisCode, string> = {
     multiple_order: 'poradie násobku',
     divisor_remainder: 'deliteľ a zvyšok',
     fraction_parts: 'čitateľ a menovateľ',
+    fraction_of_quantity: 'zlomok z počtu',
+    fraction_of_time: 'zlomky a čas',
+    fraction_answer: 'zápis zlomku',
+    fraction_equal_parts: 'rovnaké časti',
     number_comparison_choice: 'výber prvého alebo druhého čísla',
     rounding_direction: 'smer zaokrúhlenia',
     unit_conversion_direction: 'smer premeny jednotiek',
@@ -1069,6 +1240,14 @@ const classifyAnswer = (problem: Problem, userAnswer: number | string): ErrorDia
         case 'fraction_name':
         case 'fraction_compare':
             return 'fraction_parts';
+        case 'fraction_of_quantity':
+            return 'fraction_of_quantity';
+        case 'fraction_of_time':
+            return 'fraction_of_time';
+        case 'fraction_answer':
+            return 'fraction_answer';
+        case 'fraction_equal_parts':
+            return 'fraction_equal_parts';
         case 'number_comparison':
             return 'number_comparison_choice';
         case 'rounding':

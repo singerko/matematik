@@ -242,3 +242,100 @@ assertAcceptsOnly(
     'xlii',
     ['42', 'XLIII'],
 );
+
+assertAcceptsOnly(
+    'fraction of quantity',
+    problem('Koľko je 2⁄3 z čísla 18?', 12, { type: 'fraction_of_quantity', numerator: 2, denominator: 3, whole: 18, context: 'generic' }),
+    12,
+    [6, 18, 3, '12x'],
+);
+
+assertAcceptsOnly(
+    'fraction of quantity sharing',
+    problem('Spravodlivo rozdelíme 18 banánov medzi 3 kamarátov. Koľko dostane každý?', 6, { type: 'fraction_of_quantity', numerator: 1, denominator: 3, whole: 18, context: 'sharing' }),
+    6,
+    [3, 18, 5],
+);
+
+assertAcceptsOnly(
+    'fraction of time',
+    problem('Koľko minút je 1⁄4 hodiny?', 15, { type: 'fraction_of_time', numerator: 1, denominator: 4 }),
+    15,
+    [4, 60, 20],
+);
+
+const fractionAnswerProblem = problem(
+    'Akú časť hodiny tvorí 15 minút?',
+    15 / 60,
+    { type: 'fraction_answer', numerator: 15, denominator: 60, context: 'time' },
+);
+
+test('fraction answer accepts the direct form', () => {
+    assert.equal(isAnswerCorrect(fractionAnswerProblem, '15/60'), true);
+});
+
+test('fraction answer accepts any equivalent form', () => {
+    assert.equal(isAnswerCorrect(fractionAnswerProblem, '1/4'), true);
+    assert.equal(isAnswerCorrect(fractionAnswerProblem, '2/8'), true);
+    assert.equal(isAnswerCorrect(fractionAnswerProblem, '30/120'), true);
+});
+
+test('fraction answer rejects wrong fractions and malformed input', () => {
+    assert.equal(isAnswerCorrect(fractionAnswerProblem, '1/3'), false);
+    assert.equal(isAnswerCorrect(fractionAnswerProblem, '15/59'), false);
+    assert.equal(isAnswerCorrect(fractionAnswerProblem, '1/0'), false);
+    assert.equal(isAnswerCorrect(fractionAnswerProblem, '15'), false);
+    assert.equal(isAnswerCorrect(fractionAnswerProblem, 0.25), false);
+});
+
+const fractionSetProblem = problem(
+    'Z 6 dlaždíc sú 2 žlté. Akú časť tvoria žlté?',
+    2 / 6,
+    { type: 'fraction_answer', numerator: 2, denominator: 6, context: 'set' },
+);
+
+test('fraction set answer accepts equivalent forms', () => {
+    assert.equal(isAnswerCorrect(fractionSetProblem, '2/6'), true);
+    assert.equal(isAnswerCorrect(fractionSetProblem, '1/3'), true);
+    assert.equal(isAnswerCorrect(fractionSetProblem, '3/6'), false);
+});
+
+const equalPartsProblem = problem(
+    'Ktoré rozdelenie kruhu na 3 rovnakých častí je správne?',
+    1,
+    { type: 'fraction_equal_parts', parts: 3, options: [[80, 160, 120], [120, 120, 120], [150, 90, 120]], correctIndex: 1 },
+);
+
+test('equal parts accepts the correct option index', () => {
+    assert.equal(isAnswerCorrect(equalPartsProblem, 1), true);
+});
+
+test('equal parts rejects wrong option indexes', () => {
+    assert.equal(isAnswerCorrect(equalPartsProblem, 0), false);
+    assert.equal(isAnswerCorrect(equalPartsProblem, 2), false);
+});
+
+const fractionShapeProblem = problem(
+    'Akú časť obrázka je vyfarbená?',
+    3 / 8,
+    { type: 'fraction_answer', numerator: 3, denominator: 8, context: 'shape', shape: { kind: 'bar', parts: 8, shaded: 3 } },
+);
+
+test('fraction shape answer accepts equivalent fractions', () => {
+    assert.equal(isAnswerCorrect(fractionShapeProblem, '3/8'), true);
+    assert.equal(isAnswerCorrect(fractionShapeProblem, '6/16'), true);
+    assert.equal(isAnswerCorrect(fractionShapeProblem, '3/7'), false);
+});
+
+const compareDiffDen = problem(
+    'Ktorý zlomok je väčší: 2⁄3 alebo 1⁄2? 1=prvý, 0=druhý',
+    1,
+    { type: 'fraction_compare', leftNum: 2, leftDen: 3, rightNum: 1, rightDen: 2 },
+);
+
+test('fraction compare with different denominators: first/second semantics', () => {
+    assert.equal(isAnswerCorrect(compareDiffDen, 1), true);
+    assert.equal(isAnswerCorrect(compareDiffDen, 0), false);
+    assert.equal(isAnswerCorrect(compareDiffDen, 'prvý'), true);
+    assert.equal(isAnswerCorrect(compareDiffDen, 'druhý'), false);
+});
