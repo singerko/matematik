@@ -14,6 +14,7 @@ import { computeBestStreak, computeStars } from '../lib/progress';
 import { speakText } from '../lib/speech';
 import { getProblemMetadata } from '../lib/problemMetadata';
 import CelebrationEffect, { type CelebrationVariant } from './CelebrationEffect';
+import MathBuddy from './MathBuddy';
 
 interface Props {
     results: TrainingResult[]; // Zoznam všetkých tvojich odpovedí.
@@ -95,8 +96,9 @@ const Summary: React.FC<Props> = ({ results, onBack, onPracticeRecommended }) =>
         <div className="flex flex-col items-center p-4 gap-6" style={{ maxWidth: '600px', margin: '0 auto' }}>
             {celebrationVariant && <CelebrationEffect variant={celebrationVariant} />}
             <div className="text-center mt-8">
+                <MathBuddy mood="celebrate" size={104} message={percentage >= 75 ? 'Výprava splnená! Som na teba hrdý.' : 'Každým pokusom silnieš. Poďme ďalej!'} />
                 <Trophy size={64} className="text-yellow-400 mx-auto mb-4" />
-                <h1 className="text-4xl mb-2">Výborná práca!</h1>
+                <h1 className="text-4xl mb-2">Poklad nájdený!</h1>
                 <div className="text-6xl font-black text-blue-400">{percentage}%</div>
                 <p className="text-gray-400">Vyriešené {correctCount} z {total} príkladov správne.</p>
                 <div className="flex justify-center items-center gap-2 mt-4">
@@ -189,7 +191,7 @@ const Summary: React.FC<Props> = ({ results, onBack, onPracticeRecommended }) =>
 
             <button className="btn btn-primary w-full max-w-sm" onClick={onBack}>
                 <Home size={20} className="mr-2" />
-                Domov
+                Späť na mapu
             </button>
             {wrongResults.length > 0 && onPracticeRecommended && (
                 <button className="btn w-full max-w-sm" style={{ background: 'rgba(255,255,255,0.1)' }} onClick={() => onPracticeRecommended(results)}>

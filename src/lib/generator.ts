@@ -1,4 +1,4 @@
-import { type Constraints, type Problem, type MathOperation, type ProblemMetadata, type SchoolTopic, type UnitConversionCategory, type WordProblemBaseTopic } from './types';
+import { type Constraints, type Problem, type MathOperation, type ProblemMetadata, type SchoolTopic, type UnitConversionCategory, type VisualSequenceFrame, type VisualSequenceOption, type WordProblemBaseTopic } from './types';
 import { arabicToRoman } from './romanNumerals';
 import { getMultiplicationTableFromTopic, isMultiplicationTableTopic } from './schoolRules';
 
@@ -620,6 +620,42 @@ const generateLogicalSequenceProblem = (): Problem => {
     };
 };
 
+const generateVisualLogicalSequenceProblem = (): Problem => {
+    const frames: VisualSequenceFrame[] = [
+        { grid: 'x', redLine: 'right', dot: 'bottomCenter' },
+        { grid: 'quadrants', redLine: 'diagDown', dot: 'bottomLeft' },
+        { grid: 'x', redLine: 'down', dot: 'centerLeft' },
+        { grid: 'quadrants', redLine: 'diagUp', dot: 'topLeft' },
+    ];
+
+    const options: VisualSequenceOption[] = [
+        { label: 'A', frame: { grid: 'quadrants', redLine: 'diagUp', dot: 'topRight' } },
+        { label: 'B', frame: { grid: 'quadrants', redLine: 'diagDown', dot: 'topRight' } },
+        { label: 'C', frame: { grid: 'x', redLine: 'right', dot: 'topCenter' } },
+        { label: 'D', frame: { grid: 'x', redLine: 'left', dot: 'topCenter' } },
+    ];
+    const correct = 'C';
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: 'Ktorý obrázok by mohol v postupnosti nasledovať?',
+        result: 0,
+        steps: [
+            'Typ mriežky sa strieda: uhlopriečky, štvorce, uhlopriečky, štvorce.',
+            'Červená čiara sa posúva po stranách/smeroch a zelená bodka sa posúva ďalej.',
+            `Nasleduje možnosť ${correct}.`,
+        ],
+        metadata: {
+            type: 'logical_sequence',
+            pattern: ['obrázková postupnosť'],
+            fullSequence: [...frames.map((_, index) => `obrázok ${index + 1}`), correct],
+            options: options.map(option => option.label),
+            visual: { frames, options },
+        },
+    };
+};
+
 const generateSchoolTopicProblem = (settings: Constraints): Problem => {
     const topics = settings.schoolTopics?.filter(topic => {
         if (topic === 'addition') return settings.allowedOperations.includes('+');
@@ -713,6 +749,9 @@ const generateSchoolTopicProblem = (settings: Constraints): Problem => {
     }
 
     if (topic === 'logical_sequences') {
+        if (settings.schoolGrade === 'grade4' && Math.random() < 0.65) {
+            return generateVisualLogicalSequenceProblem();
+        }
         return generateLogicalSequenceProblem();
     }
 
@@ -1049,6 +1088,147 @@ const buildUnitsLength = (): Problem => {
     );
 };
 
+const buildGrade4SavingsProblem = (): Problem => {
+    const price = randomInt(18, 45) * 10;
+    const saved = price - randomInt(4, 12) * 10;
+    const dailyPay = randomChoice([5, 10, 20]);
+    const missing = price - saved;
+    const result = Math.ceil(missing / dailyPay);
+
+    return wordProblem(
+        `Teo si chce kúpiť kolobežku za ${price} eur. Už má nasporených ${saved} eur. Za jeden deň brigády zarobí ${dailyPay} eur. Najmenej koľko dní musí pracovať, aby mal dosť peňazí?`,
+        result,
+        [`${price} - ${saved} = ${missing}`, `${missing} : ${dailyPay} = ${result}`],
+        'multistep',
+    );
+};
+
+const buildGrade4ProductionProblem = (): Problem => {
+    const january = randomInt(1200, 3800);
+    const febMore = randomInt(120, 480);
+    const marLess = randomInt(180, 900);
+    const february = january + febMore;
+    const march = january - marLess;
+    const result = january + february + march;
+
+    return wordProblem(
+        `Vo firme vyrobili v januári ${january} bicyklov, vo februári o ${febMore} bicyklov viac ako v januári a v marci o ${marLess} bicyklov menej ako v januári. Koľko bicyklov vyrobili spolu za prvé tri mesiace?`,
+        result,
+        [`${january} + ${febMore} = ${february}`, `${january} - ${marLess} = ${march}`, `${january} + ${february} + ${march} = ${result}`],
+        'multistep',
+    );
+};
+
+const buildGrade4SeatsProblem = (): Problem => {
+    const seatsPerCompartment = randomChoice([6, 8]);
+    const knights = randomInt(12, 28);
+    const giants = randomInt(2, 6);
+    const giantSeats = randomInt(2, 3);
+    const occupiedSeats = knights + giants * giantSeats;
+    const result = Math.ceil(occupiedSeats / seatsPerCompartment);
+
+    return wordProblem(
+        `Kupé vo vlaku má ${seatsPerCompartment} sedadiel. Rytier zaberie jedno sedadlo, obor zaberie ${giantSeats} sedadlá. Koľko kupé obsadí spolu ${knights} rytierov a ${giants} obri?`,
+        result,
+        [`${giants} * ${giantSeats} = ${giants * giantSeats}`, `${knights} + ${giants * giantSeats} = ${occupiedSeats}`, `${occupiedSeats} : ${seatsPerCompartment} = ${result} zvyšok ${occupiedSeats % seatsPerCompartment}`],
+        'multistep',
+    );
+};
+
+const buildGrade4WeeksProblem = (): Problem => {
+    const totalDays = randomChoice([28, 30, 31]);
+    const remainingDays = randomInt(1, 6);
+    const completedDays = totalDays - remainingDays;
+    const result = Math.floor(completedDays / 7);
+
+    return wordProblem(
+        `Filip si dal záväzok, že bude ${totalDays} dní každé ráno cvičiť. Chýbajú mu posledné ${remainingDays} dni. Koľko celých týždňov už cvičil?`,
+        result,
+        [`${totalDays} - ${remainingDays} = ${completedDays}`, `${completedDays} : 7 = ${result} zvyšok ${completedDays % 7}`],
+        'units',
+    );
+};
+
+const buildGrade4SquarePerimeterProblem = (): Problem => {
+    const side = randomInt(4, 25);
+    const perimeter = side * 4;
+
+    return wordProblem(
+        `Detské ihrisko má tvar štvorca, ktorého obvod je ${perimeter} m. Koľko metrov meria strana tohto štvorcového ihriska?`,
+        side,
+        [`${perimeter} : 4 = ${side}`],
+        'units',
+    );
+};
+
+const buildGrade4FractionGroupProblem = (): Problem => {
+    const third = randomInt(3, 12);
+    const total = third * 3;
+    const result = total - third;
+
+    return wordProblem(
+        `Na programátorský krúžok chodí ${total} detí. Tretinu z nich tvoria dievčatá. Koľko chlapcov chodí na krúžok?`,
+        result,
+        [`${total} : 3 = ${third}`, `${total} - ${third} = ${result}`],
+        'multistep',
+    );
+};
+
+const buildGrade4YearProblem = (): Problem => {
+    const birthYear = randomInt(1200, 1900);
+    const elapsedYears = randomInt(80, 650);
+    const result = birthYear + elapsedYears;
+
+    return wordProblem(
+        `Ján sa narodil v roku ${birthYear}. V ktorom roku uplynulo ${elapsedYears} rokov od jeho narodenia?`,
+        result,
+        [`${birthYear} + ${elapsedYears} = ${result}`],
+        'addition',
+    );
+};
+
+const buildGrade4OperationChainProblem = (): Problem => {
+    const result = randomInt(1500, 4500);
+    const sub = randomInt(300, 900);
+    const add = randomInt(700, 1800);
+    const hidden = result + sub - add;
+
+    return wordProblem(
+        `Ktoré číslo patrí do modrého krúžku? Najprv k nemu pripočítame ${add}, potom odpočítame ${sub} a dostaneme ${result}.`,
+        hidden,
+        [`${result} + ${sub} = ${result + sub}`, `${result + sub} - ${add} = ${hidden}`],
+        'multistep',
+    );
+};
+
+const buildGrade4DigitRiddleProblem = (): Problem => {
+    const thousands = 3;
+    const hundreds = 8;
+    const units = 1;
+    const digitSum = randomInt(14, 21);
+    const tens = digitSum - thousands - hundreds - units;
+    const result = thousands * 1000 + hundreds * 100 + tens * 10 + units;
+
+    return wordProblem(
+        `Eliškine šťastné číslo je štvorciferné. Na mieste tisícok má číslicu ${thousands}, na mieste stoviek najväčšiu párnu číslicu, na mieste jednotiek najmenšiu nepárnu číslicu a súčet všetkých číslic je ${digitSum}. Ktoré číslo je Eliškine šťastné číslo?`,
+        result,
+        [`Najväčšia párna číslica je ${hundreds}.`, `Najmenšia nepárna číslica je ${units}.`, `${digitSum} - ${thousands} - ${hundreds} - ${units} = ${tens}`, `Číslo je ${result}.`],
+        'multistep',
+    );
+};
+
+const buildGrade4KomparoInspiredWordProblem = (): Problem => randomChoice([
+    buildGrade4SavingsProblem,
+    buildGrade4ProductionProblem,
+    buildGrade4SeatsProblem,
+    buildGrade4WeeksProblem,
+    buildGrade4SquarePerimeterProblem,
+    buildGrade4FractionGroupProblem,
+    buildGrade4YearProblem,
+    buildGrade4OperationChainProblem,
+    buildGrade4DigitRiddleProblem,
+])();
+
 const generateWordProblem = (settings: Constraints): Problem => {
     const possibleTopics = settings.schoolTopics?.filter(topic => topic !== 'word_problem' && topic !== 'indian_division') ?? [];
     const topic = possibleTopics.length ? randomChoice(possibleTopics) : pickWordProblemFallbackTopic(settings);
@@ -1067,11 +1247,12 @@ const generateWordProblem = (settings: Constraints): Problem => {
     // Multi-step + units for grade4+
     if (isUpperPrimary(settings)) {
         const roll = Math.random();
-        if (roll < 0.18) return buildMultiStepShopping(settings);
-        if (roll < 0.30) return buildMultiStepGroups(settings);
-        if (roll < 0.40) return buildUnitsMoney(settings);
-        if (roll < 0.48) return buildUnitsTime();
-        if (roll < 0.55) return buildUnitsLength();
+        if (settings.schoolGrade === 'grade4' && roll < 0.32) return buildGrade4KomparoInspiredWordProblem();
+        if (roll < 0.46) return buildMultiStepShopping(settings);
+        if (roll < 0.58) return buildMultiStepGroups(settings);
+        if (roll < 0.68) return buildUnitsMoney(settings);
+        if (roll < 0.76) return buildUnitsTime();
+        if (roll < 0.83) return buildUnitsLength();
     } else if (settings.schoolGrade === 'grade3') {
         const roll = Math.random();
         if (roll < 0.18) return buildUnitsMoney(settings);

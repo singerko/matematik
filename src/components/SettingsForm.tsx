@@ -21,6 +21,7 @@ import { resolveProfileConstraints } from '../lib/profileConstraints';
 import { getTutorialCatalogForGrade } from '../lib/tutorials/catalog';
 import { getWeakestProgressTopics } from '../lib/progress';
 import { getTopicLabel } from '../lib/explanations';
+import MathBuddy from './MathBuddy';
 
 const SCHOOL_TOPIC_LABELS: Record<SchoolTopic, string> = {
     addition: 'Sčítanie',
@@ -908,16 +909,29 @@ const SettingsForm: React.FC<Props> = ({ profile, onSave, onStart, onStartRecomm
                 </button>
             </div>
 
-            <div className="card glass">
-                <h2 className="text-center">Začať tréning</h2>
+            <div className="adventure-hero">
+                <MathBuddy mood="happy" size={92} message={`Ahoj ${profile.name}! Kam sa dnes vyberieme?`} />
+                <div className="adventure-map-preview" aria-hidden="true">
+                    <span className="map-stop map-stop-done">✓</span>
+                    <span className="map-path" />
+                    <span className="map-stop map-stop-next">★</span>
+                    <span className="map-path" />
+                    <span className="map-stop map-stop-goal">🏆</span>
+                </div>
+                <div className="daily-quest">Dnešná výprava · získaj až 3 hviezdy</div>
+            </div>
+
+            <div className="card glass training-card">
+                <div className="quest-label">VYBER SI VÝPRAVU</div>
+                <h2 className="text-center">Matematické dobrodružstvo</h2>
                 <div className="flex flex-col gap-4">
-                    <label className="text-center">Koľko príkladov?</label>
-                    <div className="flex justify-center gap-2">
+                    <label className="text-center">Aká dlhá bude cesta?</label>
+                    <div className="adventure-counts">
                         {[5, 10, 20, 50].map(n => (
                             <button
                                 key={n}
                                 type="button"
-                                className={`btn ${effectiveProblemCount === n ? 'btn-primary' : ''}`}
+                                className={`btn adventure-count-btn ${effectiveProblemCount === n ? 'btn-primary' : ''}`}
                                 style={{ background: effectiveProblemCount === n ? '' : 'rgba(255,255,255,0.1)' }}
                                 onClick={() => {
                                     if (effectiveMode === 'school') {
@@ -927,7 +941,7 @@ const SettingsForm: React.FC<Props> = ({ profile, onSave, onStart, onStartRecomm
                                     }
                                 }}
                             >
-                                {n}
+                                <strong>{n}</strong><small className="count-label">krokov</small>
                             </button>
                         ))}
                     </div>
@@ -957,6 +971,7 @@ const SettingsForm: React.FC<Props> = ({ profile, onSave, onStart, onStartRecomm
                             {([
                                 { value: 'classic', label: 'Klasické príklady' },
                                 { value: 'grid_puzzle', label: 'Mriežková hra' },
+                                { value: 'platform_adventure', label: 'Skákacia výprava' },
                             ] as { value: PracticeStyle; label: string }[]).map(option => (
                                 <button
                                     key={option.value}
@@ -996,7 +1011,7 @@ const SettingsForm: React.FC<Props> = ({ profile, onSave, onStart, onStartRecomm
                         }}
                     >
                         <Play size={20} className="mr-2" />
-                        Štart
+                        Vyraziť za pokladom
                     </button>
                     {!canStartTraining && (
                         <div className="text-center text-sm text-yellow-200">

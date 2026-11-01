@@ -1,7 +1,7 @@
 export type MathOperation = '+' | '-' | '*' | '/' | '()';
 export type ProfileMode = 'custom' | 'school';
 export type TrainingMode = 'learn' | 'test' | 'lightning';
-export type PracticeStyle = 'classic' | 'grid_puzzle';
+export type PracticeStyle = 'classic' | 'grid_puzzle' | 'platform_adventure';
 export type SchoolGrade = 'grade1' | 'grade2' | 'grade3' | 'grade4' | 'grade5';
 export type MultiplicationTableTopic =
     | 'multiplication_table_1'
@@ -229,6 +229,21 @@ export interface Profile {
 
 export type WordProblemBaseTopic = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'comparison' | 'multistep' | 'units';
 
+export type VisualSequenceGrid = 'x' | 'quadrants';
+export type VisualSequenceRedLine = 'right' | 'down' | 'left' | 'diagDown' | 'diagUp';
+export type VisualSequenceDot = 'topLeft' | 'topCenter' | 'topRight' | 'centerLeft' | 'center' | 'centerRight' | 'bottomLeft' | 'bottomCenter' | 'bottomRight';
+
+export interface VisualSequenceFrame {
+    grid: VisualSequenceGrid;
+    redLine: VisualSequenceRedLine;
+    dot: VisualSequenceDot;
+}
+
+export interface VisualSequenceOption {
+    label: string;
+    frame: VisualSequenceFrame;
+}
+
 export type ProblemMetadata =
     | { type: 'addition'; left: number; right: number }
     | { type: 'subtraction'; left: number; right: number }
@@ -255,7 +270,7 @@ export type ProblemMetadata =
     | { type: 'unit_conversion_sum'; terms: { value: number; unit: AnyUnit }[]; to: AnyUnit; result: number }
     | { type: 'geometry_area'; leftRows: number; leftCols: number; rightRows: number; rightCols: number }
     | { type: 'money_coins'; coins: number[] }
-    | { type: 'logical_sequence'; pattern: string[]; fullSequence: string[]; options: string[] }
+    | { type: 'logical_sequence'; pattern: string[]; fullSequence: string[]; options: string[]; visual?: { frames: VisualSequenceFrame[]; options: VisualSequenceOption[] } }
     | { type: 'roman_to_arabic'; roman: string; value: number }
     | { type: 'arabic_to_roman'; value: number; roman: string };
 

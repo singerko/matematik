@@ -14,6 +14,7 @@ import { createRecommendedProblemsForTopic, createRecommendedProblemsFromProgres
 const SettingsForm = lazy(() => import('./components/SettingsForm'));
 const GameSession = lazy(() => import('./components/GameSession'));
 const GridPuzzleSession = lazy(() => import('./components/GridPuzzleSession'));
+const PlatformAdventureSession = lazy(() => import('./components/PlatformAdventureSession'));
 const Summary = lazy(() => import('./components/Summary'));
 const MethodHelp = lazy(() => import('./components/MethodHelp'));
 const TutorialLibrary = lazy(() => import('./components/TutorialLibrary'));
@@ -250,7 +251,14 @@ function App() {
             />
           )}
           {screen === 'GAME' && currentProfile && activeGameSettings && (
-            practiceStyle === 'grid_puzzle' && initialProblems.length === 0 ? (
+            practiceStyle === 'platform_adventure' && initialProblems.length === 0 ? (
+              <PlatformAdventureSession
+                settings={activeGameSettings ?? currentProfile.settings}
+                totalProblems={problemCount || activeGameSettings?.problemCount || 10}
+                onComplete={handleGameComplete}
+                onExit={handleRequestGameExit}
+              />
+            ) : practiceStyle === 'grid_puzzle' && initialProblems.length === 0 ? (
               <GridPuzzleSession
                 settings={activeGameSettings ?? currentProfile.settings}
                 totalProblems={problemCount || activeGameSettings?.problemCount || 10}

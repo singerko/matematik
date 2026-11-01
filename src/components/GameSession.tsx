@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { type Constraints, type ErrorDiagnosisCode, type Problem, type TrainingResult } from '../lib/types';
+import { type Constraints, type ErrorDiagnosisCode, type Problem, type TrainingResult, type VisualSequenceFrame, type VisualSequenceOption } from '../lib/types';
 import { generateProblem } from '../lib/generator';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XCircle, CheckCircle, ArrowRight, CornerDownLeft, Delete, Calculator, X, RotateCcw } from 'lucide-react';
@@ -11,6 +11,7 @@ import { speakText } from '../lib/speech';
 import { createEarlyGradeGuidance, createGuidedCorrection, type GuidedCorrection } from '../lib/guidedCorrection';
 import { formatOperation, getFirstIntermediateStep, getWordProblemOperation, WORD_PROBLEM_OPERATIONS, type WordProblemOperation } from '../lib/wordProblemFlow';
 import { getProblemMetadata } from '../lib/problemMetadata';
+import MathBuddy from './MathBuddy';
 
 const PRAISE_PHRASES = [
     'Výborne!',
@@ -42,6 +43,61 @@ const isYesNoProblem = (problem: Problem) => problem.expression.includes('1=áno
 const isFirstSecondProblem = (problem: Problem) => problem.expression.includes('1=prvý, 0=druhý');
 const isLogicalSequenceProblem = (problem: Problem) => problem.metadata?.type === 'logical_sequence';
 const isRomanTextAnswerProblem = (problem: Problem) => getProblemMetadata(problem)?.type === 'arabic_to_roman';
+
+const dotPositions: Record<VisualSequenceFrame['dot'], { x: number; y: number }> = {
+    topLeft: { x: 25, y: 25 },
+    topCenter: { x: 50, y: 25 },
+    topRight: { x: 75, y: 25 },
+    centerLeft: { x: 25, y: 50 },
+    center: { x: 50, y: 50 },
+    centerRight: { x: 75, y: 50 },
+    bottomLeft: { x: 25, y: 75 },
+    bottomCenter: { x: 50, y: 75 },
+    bottomRight: { x: 75, y: 75 },
+};
+
+const redLines: Record<VisualSequenceFrame['redLine'], { x1: number; y1: number; x2: number; y2: number }> = {
+    right: { x1: 50, y1: 50, x2: 100, y2: 50 },
+    down: { x1: 50, y1: 50, x2: 50, y2: 100 },
+    left: { x1: 0, y1: 50, x2: 50, y2: 50 },
+    diagDown: { x1: 50, y1: 50, x2: 100, y2: 100 },
+    diagUp: { x1: 0, y1: 100, x2: 50, y2: 50 },
+};
+
+const VisualSequencePicture: React.FC<{ frame: VisualSequenceFrame; label?: string; size?: number }> = ({ frame, label, size = 86 }) => {
+    const dot = dotPositions[frame.dot];
+    const red = redLines[frame.redLine];
+
+    return (
+        <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem' }}>
+            <svg width={size} height={size} viewBox="0 0 100 100" role="img" aria-label={label ? `Možnosť ${label}` : 'Obrázok postupnosti'}>
+                <rect x="2" y="2" width="96" height="96" fill="#f8fafc" stroke="#0f172a" strokeWidth="2.5" />
+                {frame.grid === 'x' ? (
+                    <>
+                        <line x1="2" y1="2" x2="98" y2="98" stroke="#0f172a" strokeWidth="1.8" />
+                        <line x1="98" y1="2" x2="2" y2="98" stroke="#0f172a" strokeWidth="1.8" />
+                    </>
+                ) : (
+                    <>
+                        <line x1="50" y1="2" x2="50" y2="98" stroke="#0f172a" strokeWidth="1.8" />
+                        <line x1="2" y1="50" x2="98" y2="50" stroke="#0f172a" strokeWidth="1.8" />
+                    </>
+                )}
+                <line {...red} stroke="#ef4444" strokeWidth="2.6" strokeLinecap="round" />
+                <circle cx={dot.x} cy={dot.y} r="7" fill="#16a34a" />
+            </svg>
+            {label && <div style={{ color: '#93c5fd', fontWeight: 900, fontSize: '1.1rem' }}>{label})</div>}
+        </div>
+    );
+};
+
+const VisualLogicalSequence: React.FC<{ frames: VisualSequenceFrame[] }> = ({ frames }) => (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+        {frames.map((frame, index) => (
+            <VisualSequencePicture key={index} frame={frame} />
+        ))}
+    </div>
+);
 
 type ScratchOperation = '+' | '-' | '×' | '÷';
 type ScratchLine = 'top' | 'bottom' | 'carry' | 'result';
@@ -1250,16 +1306,52 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
     const firstIntermediateStep = getFirstIntermediateStep(currentProblem);
     const isSolvingWordIntermediate = Boolean(firstIntermediateStep && selectedWordOperation === expectedWordOperation && !wordIntermediateSolved);
     const needsRomanTextAnswer = isRomanTextAnswerProblem(currentProblem);
+    const logicalVisual = currentProblem.metadata?.type === 'logical_sequence' ? currentProblem.metadata.visual : undefined;
     const effectiveDirectAnswers = currentProblem.metadata?.type === 'logical_sequence'
         ? currentProblem.metadata.options.map((option) => ({ value: option, label: option }))
         : null;
+    const journeyProgress = Math.round((currentIndex / Math.max(problems.length, 1)) * 100);
+    const buddyMessage = status === 'CORRECT'
+        ? 'To bolo ono! Poklad je bližšie.'
+        : status === 'HINT'
+            ? 'Nevadí, rozdelíme si to na malý krok.'
+            : status === 'WRONG'
+                ? 'Chyby nás učia. Ďalší krok zvládneme spolu.'
+                : streak >= 3
+                    ? `Séria ${streak}! Ideš ako raketa.`
+                    : currentIndex === 0
+                        ? 'Poď, nájdeme matematický poklad!'
+                        : 'Každý príklad je jeden krok vpred.';
 
     return (
         <div className="game-session flex flex-col items-center justify-between" style={{ flex: 1, minHeight: 0, maxWidth: '600px', margin: '0 auto', width: '100%' }}>
-            <div className="w-full flex justify-between items-center p-4">
-                <button onClick={onExit} className="btn-sm text-gray-400">Ukončiť</button>
-                <div className="flex flex-col items-center">
-                    <div className="text-xl font-bold">{currentIndex + 1} / {problems.length || totalProblems}</div>
+            <div className="journey-header w-full">
+                <div className="journey-actions">
+                    <button onClick={onExit} className="btn-sm text-gray-400">← Odísť</button>
+                    <div className="journey-counter">Krok {currentIndex + 1} z {problems.length || totalProblems}</div>
+                    <button
+                        type="button"
+                        className="btn-sm text-gray-400 math-pad-trigger"
+                        onClick={() => setScratchPadOpen(true)}
+                        aria-label="Otvoriť matematickú plochu"
+                    >
+                        <Calculator size={18} />
+                        <span>Plocha</span>
+                    </button>
+                </div>
+                <div className="adventure-track" aria-label={`Postup výpravou ${journeyProgress} percent`}>
+                    <div className="adventure-track-fill" style={{ width: `${journeyProgress}%` }} />
+                    <span className="track-start">🏕️</span>
+                    <motion.span className="track-hero" animate={{ left: `${journeyProgress}%` }}>🦊</motion.span>
+                    <span className="track-goal">🏆</span>
+                </div>
+                <div className="buddy-game-row">
+                    <MathBuddy
+                        compact
+                        size={58}
+                        mood={status === 'CORRECT' ? 'celebrate' : status === 'IDLE' ? 'thinking' : 'encourage'}
+                        message={buddyMessage}
+                    />
                     {isLightningMode && (
                         <div className="w-24 h-1.5 bg-gray-700 rounded-full mt-1 overflow-hidden">
                             <motion.div
@@ -1271,15 +1363,6 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                         </div>
                     )}
                 </div>
-                <button
-                    type="button"
-                    className="btn-sm text-gray-400 math-pad-trigger"
-                    onClick={() => setScratchPadOpen(true)}
-                    aria-label="Otvoriť matematickú plochu"
-                >
-                    <Calculator size={18} />
-                    <span>Plocha</span>
-                </button>
             </div>
 
             {scratchPadOpen && (
@@ -1367,15 +1450,27 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                         </>
                     ) : (
                         <>
-                            <div style={{
-                                fontSize: currentProblem.kind === 'word_problem' ? '1.45rem' : currentProblem.expression.length > 15 ? '2rem' : currentProblem.expression.length > 10 ? '2.5rem' : '3.5rem',
-                                fontWeight: 800,
-                                marginBottom: '2rem',
-                                lineHeight: 1.2,
-                                padding: '0 1rem'
-                            }}>
-                                {currentProblem.expression.replace(/\*/g, '×').replace(/\//g, '÷')}
-                            </div>
+                            {logicalVisual ? (
+                                <>
+                                    <div style={{ color: '#cbd5e1', fontSize: '1rem', marginBottom: '0.75rem' }}>
+                                        Nasledujúca postupnosť obrázkov je utvorená podľa istého princípu:
+                                    </div>
+                                    <VisualLogicalSequence frames={logicalVisual.frames} />
+                                    <div style={{ fontSize: '1.35rem', fontWeight: 800, marginBottom: '1.25rem', lineHeight: 1.25, padding: '0 1rem' }}>
+                                        {currentProblem.expression}
+                                    </div>
+                                </>
+                            ) : (
+                                <div style={{
+                                    fontSize: currentProblem.kind === 'word_problem' ? '1.45rem' : currentProblem.expression.length > 15 ? '2rem' : currentProblem.expression.length > 10 ? '2.5rem' : '3.5rem',
+                                    fontWeight: 800,
+                                    marginBottom: '2rem',
+                                    lineHeight: 1.2,
+                                    padding: '0 1rem'
+                                }}>
+                                    {currentProblem.expression.replace(/\*/g, '×').replace(/\//g, '÷')}
+                                </div>
+                            )}
 
                             {!isYesNoProblem(currentProblem) && !isFirstSecondProblem(currentProblem) && (
                                 <>
@@ -1648,16 +1743,27 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
 
             {isLogicalSequenceProblem(currentProblem) && effectiveDirectAnswers ? (
                 <div className="game-keypad flex gap-4 w-full flex-wrap justify-center" style={{ maxWidth: '600px', marginTop: '1rem' }}>
-                    {effectiveDirectAnswers.map((opt, i) => (
-                        <button
-                            key={i}
-                            className="btn btn-primary text-4xl"
-                            style={{ width: '80px', height: '80px', borderRadius: '1rem' }}
-                            onClick={() => submitDirectAnswer(opt.value, opt.label)}
-                        >
-                            {opt.label}
-                        </button>
-                    ))}
+                    {logicalVisual
+                        ? logicalVisual.options.map((option: VisualSequenceOption) => (
+                            <button
+                                key={option.label}
+                                className="btn"
+                                style={{ padding: '0.45rem', borderRadius: '0.75rem', background: 'rgba(255,255,255,0.08)' }}
+                                onClick={() => submitDirectAnswer(option.label, option.label)}
+                            >
+                                <VisualSequencePicture frame={option.frame} label={option.label} size={84} />
+                            </button>
+                        ))
+                        : effectiveDirectAnswers.map((opt, i) => (
+                            <button
+                                key={i}
+                                className="btn btn-primary text-4xl"
+                                style={{ width: '80px', height: '80px', borderRadius: '1rem' }}
+                                onClick={() => submitDirectAnswer(opt.value, opt.label)}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
                 </div>
             ) : (isYesNoProblem(currentProblem) || isFirstSecondProblem(currentProblem)) && !stepDivisionData && !largeMultiplicationData ? (
                 <div className="game-keypad flex gap-4 w-full" style={{ maxWidth: '400px', marginTop: '1rem' }}>
