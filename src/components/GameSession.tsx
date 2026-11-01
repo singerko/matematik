@@ -607,6 +607,69 @@ const FractionCompareBars: React.FC<{ leftNum: number; leftDen: number; rightNum
     );
 };
 
+// Podlažný plán telesa z kociek — pohľad zhora, číslo = počet kociek na sebe.
+const CubePlanView: React.FC<{ grid: number[][]; cell?: number }> = ({ grid, cell = 44 }) => {
+    const rows = grid.length;
+    const cols = grid[0]?.length ?? 0;
+    return (
+        <svg width={cols * cell} height={rows * cell} viewBox={`0 0 ${cols * cell} ${rows * cell}`} role="img" aria-label="Podlažný plán">
+            {grid.map((row, r) => row.map((value, c) => (
+                value > 0 ? (
+                    <g key={`${r}-${c}`}>
+                        <rect x={c * cell + 1} y={r * cell + 1} width={cell - 2} height={cell - 2} fill="#1e293b" stroke="#f8fafc" strokeWidth={2} rx={4} />
+                        <text x={c * cell + cell / 2} y={r * cell + cell / 2} textAnchor="middle" dominantBaseline="central" fontSize={cell * 0.5} fontWeight="900" fill="#facc15">{value}</text>
+                    </g>
+                ) : null
+            )))}
+        </svg>
+    );
+};
+
+// Izometrické teleso z kociek vykreslené z výškovej mapy (painter's order: zozadu dopredu, zdola nahor).
+const CubeSolidView: React.FC<{ grid: number[][] }> = ({ grid }) => {
+    const rows = grid.length;
+    const cols = grid[0]?.length ?? 0;
+    const s = 20;
+    const cubeH = 22;
+    const proj = (c: number, r: number, h: number) => ({ x: (c - r) * s, y: (c + r) * (s / 2) - h * cubeH });
+
+    const cubes: { r: number; c: number; h: number }[] = [];
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            for (let h = 0; h < grid[r][c]; h++) cubes.push({ r, c, h });
+        }
+    }
+    cubes.sort((a, b) => (a.r + a.c) - (b.r + b.c) || a.h - b.h);
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const { r, c, h } of cubes) {
+        for (const [cc, rr, hh] of [[c, r, h], [c + 1, r, h], [c, r + 1, h], [c + 1, r + 1, h], [c, r, h + 1], [c + 1, r, h + 1], [c, r + 1, h + 1], [c + 1, r + 1, h + 1]]) {
+            const p = proj(cc, rr, hh);
+            minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+            minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+        }
+    }
+    const pad = 6;
+    const W = maxX - minX + 2 * pad;
+    const H = maxY - minY + 2 * pad;
+    const poly = (pts: number[][]) => pts.map(([cc, rr, hh]) => {
+        const p = proj(cc, rr, hh);
+        return `${p.x - minX + pad},${p.y - minY + pad}`;
+    }).join(' ');
+
+    return (
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Teleso z kociek">
+            {cubes.map(({ r, c, h }, i) => (
+                <g key={i}>
+                    <polygon points={poly([[c + 1, r, h + 1], [c + 1, r + 1, h + 1], [c + 1, r + 1, h], [c + 1, r, h]])} fill="#d97706" stroke="#78350f" strokeWidth={1} />
+                    <polygon points={poly([[c, r + 1, h + 1], [c + 1, r + 1, h + 1], [c + 1, r + 1, h], [c, r + 1, h]])} fill="#b45309" stroke="#78350f" strokeWidth={1} />
+                    <polygon points={poly([[c, r, h + 1], [c + 1, r, h + 1], [c + 1, r + 1, h + 1], [c, r + 1, h + 1]])} fill="#fbbf24" stroke="#78350f" strokeWidth={1} />
+                </g>
+            ))}
+        </svg>
+    );
+};
+
 // Desatinná číselná os so značkou (šípkou) — žiak prečíta hodnotu.
 const DecimalNumberLineView: React.FC<{ min: number; max: number; step: number; mark: number }> = ({ min, max, step, mark }) => {
     const W = 320;
@@ -1572,6 +1635,9 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
     const compareMeta = currentMeta?.type === 'fraction_compare' ? currentMeta : null;
     const orderMeta = currentMeta?.type === 'decimal_order' ? currentMeta : null;
     const numberLineMeta = currentMeta?.type === 'decimal_number_line' ? currentMeta : null;
+    const cubePlanMeta = currentMeta?.type === 'cube_plan_count' ? currentMeta : null;
+    const cubeSolidMeta = currentMeta?.type === 'cube_solid_count' ? currentMeta : null;
+    const cubeMatchMeta = currentMeta?.type === 'cube_match' ? currentMeta : null;
     const isLongDivision = isLongDivisionProblem(currentProblem);
     const expectedWordOperation = getWordProblemOperation(currentProblem);
     const firstIntermediateStep = getFirstIntermediateStep(currentProblem);
@@ -1731,6 +1797,41 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                         {currentProblem.expression}
                                     </div>
                                 </>
+                            ) : cubeMatchMeta ? (
+                                <>
+                                    <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
+                                        <CubeSolidView grid={cubeMatchMeta.grid} />
+                                    </div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1rem', lineHeight: 1.25, padding: '0 1rem' }}>
+                                        {currentProblem.expression}
+                                    </div>
+                                    <div className="flex justify-center gap-3" style={{ flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                                        {cubeMatchMeta.options.map((option, idx) => {
+                                            const letter = String.fromCharCode(65 + idx);
+                                            const selected = directAnswer?.value === idx;
+                                            const isCorrectOption = idx === cubeMatchMeta.correctIndex;
+                                            const showResult = directAnswer != null;
+                                            const background = showResult && selected
+                                                ? isCorrectOption ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.28)'
+                                                : showResult && isCorrectOption
+                                                    ? 'rgba(34,197,94,0.3)'
+                                                    : 'rgba(255,255,255,0.08)';
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    className="btn"
+                                                    style={{ padding: '0.6rem', borderRadius: '0.9rem', background, display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem' }}
+                                                    onClick={() => submitDirectAnswer(idx, letter)}
+                                                    disabled={status !== 'IDLE'}
+                                                >
+                                                    <CubePlanView grid={option} cell={34} />
+                                                    <span style={{ color: '#93c5fd', fontWeight: 900, fontSize: '1.1rem' }}>{letter})</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </>
                             ) : orderMeta ? (
                                 <>
                                     <div style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '1.25rem', lineHeight: 1.25, padding: '0 1rem' }}>
@@ -1812,6 +1913,16 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                             <DecimalNumberLineView min={numberLineMeta.min} max={numberLineMeta.max} step={numberLineMeta.step} mark={numberLineMeta.mark} />
                                         </div>
                                     )}
+                                    {cubePlanMeta && (
+                                        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                                            <CubePlanView grid={cubePlanMeta.grid} />
+                                        </div>
+                                    )}
+                                    {cubeSolidMeta && (
+                                        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                                            <CubeSolidView grid={cubeSolidMeta.grid} />
+                                        </div>
+                                    )}
                                     <div style={{
                                         fontSize: currentProblem.kind === 'word_problem' ? '1.45rem' : currentProblem.expression.length > 15 ? '2rem' : currentProblem.expression.length > 10 ? '2.5rem' : '3.5rem',
                                         fontWeight: 800,
@@ -1824,7 +1935,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                 </>
                             )}
 
-                            {!isYesNoProblem(currentProblem) && !isFirstSecondProblem(currentProblem) && !equalPartsMeta && !orderMeta && (
+                            {!isYesNoProblem(currentProblem) && !isFirstSecondProblem(currentProblem) && !equalPartsMeta && !orderMeta && !cubeMatchMeta && (
                                 <>
                                     {guidedWarmup && (
                                         <div
@@ -2103,7 +2214,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                 </AnimatePresence>
             </div>
 
-            {equalPartsMeta || orderMeta ? null : isLogicalSequenceProblem(currentProblem) && effectiveDirectAnswers ? (
+            {equalPartsMeta || orderMeta || cubeMatchMeta ? null : isLogicalSequenceProblem(currentProblem) && effectiveDirectAnswers ? (
                 <div className="game-keypad flex gap-4 w-full flex-wrap justify-center" style={{ maxWidth: '600px', marginTop: '1rem' }}>
                     {logicalVisual
                         ? logicalVisual.options.map((option: VisualSequenceOption) => (

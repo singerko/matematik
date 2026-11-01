@@ -721,6 +721,54 @@ const explainByMetadata = (problem: Problem, metadata: ProblemMetadata): Problem
                 recommendation: 'Precvič sčítanie a odčítanie desatinných čísel.',
             };
         }
+        case 'cube_plan_count': {
+            const { grid, question } = metadata;
+            const total = grid.flat().reduce((a, b) => a + b, 0);
+            const max = Math.max(...grid.flat());
+            const columns = grid.flat().filter(v => v > 0).length;
+            if (question === 'total') {
+                return {
+                    topic: 'telesá z kociek',
+                    hint: `Číslo v políčku hovorí, koľko kociek je na sebe. Spočítaj všetky čísla.`,
+                    steps: [`Sčítaj čísla zo všetkých políčok.`, `Spolu je ${total} kociek.`],
+                    recommendation: 'Precvič počítanie kociek z podlažného plánu.',
+                };
+            }
+            if (question === 'max') {
+                return {
+                    topic: 'telesá z kociek',
+                    hint: `Najvyšší stĺpec je políčko s najväčším číslom.`,
+                    steps: [`Nájdi najväčšie číslo v pláne.`, `Najvyšší stĺpec má ${max} kociek.`],
+                    recommendation: 'Precvič čítanie podlažného plánu.',
+                };
+            }
+            return {
+                topic: 'telesá z kociek',
+                hint: `Stĺpec je každé políčko, kde je aspoň jedna kocka.`,
+                steps: [`Spočítaj políčka s číslom väčším ako 0.`, `Teleso stojí na ${columns} stĺpcoch.`],
+                recommendation: 'Precvič čítanie podlažného plánu.',
+            };
+        }
+        case 'cube_solid_count': {
+            const { grid } = metadata;
+            const total = grid.flat().reduce((a, b) => a + b, 0);
+            return {
+                topic: 'telesá z kociek',
+                hint: `Počítaj po stĺpcoch a nezabudni na skryté kocky vzadu a pod vrchnými.`,
+                steps: [`Spočítaj kocky v každom stĺpci.`, `Spolu má teleso ${total} kociek.`],
+                recommendation: 'Precvič počítanie kociek vrátane skrytých.',
+            };
+        }
+        case 'cube_match': {
+            const { correctIndex } = metadata;
+            const letter = String.fromCharCode(65 + correctIndex);
+            return {
+                topic: 'podlažný plán telesa',
+                hint: `V pláne je v každom políčku toľko, koľko kociek je na sebe v danom stĺpci.`,
+                steps: [`Pre každý stĺpec telesa zisti výšku a porovnaj s plánmi.`, `Správny je plán ${letter}.`],
+                recommendation: 'Precvič priradenie podlažného plánu k telesu.',
+            };
+        }
         case 'fraction_equal_parts': {
             const { parts, correctIndex } = metadata;
             const letter = String.fromCharCode(65 + correctIndex);
@@ -1193,6 +1241,28 @@ export const diagnoseAnswer = (problem: Problem, userAnswer: number | string): s
                 if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
                 return `Zarovnaj desatinné čiarky pod seba: ${dec(left)} ${op === '+' ? '+' : '−'} ${dec(right)} = ${dec(result)}${context === 'money' ? ' €' : ''}.`;
             }
+            case 'cube_plan_count': {
+                const { grid, question } = metadata;
+                const total = grid.flat().reduce((a, b) => a + b, 0);
+                const max = Math.max(...grid.flat());
+                const columns = grid.flat().filter(v => v > 0).length;
+                if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
+                return question === 'total'
+                    ? `Sčítaj čísla zo všetkých políčok — spolu je ${total} kociek.`
+                    : question === 'max'
+                        ? `Najvyšší stĺpec je najväčšie číslo v pláne: ${max}.`
+                        : `Spočítaj políčka s kockou — teleso má ${columns} stĺpcov.`;
+            }
+            case 'cube_solid_count': {
+                const { grid } = metadata;
+                const total = grid.flat().reduce((a, b) => a + b, 0);
+                if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
+                return `Nezabudni na skryté kocky. Po stĺpcoch je ich spolu ${total}.`;
+            }
+            case 'cube_match': {
+                const { correctIndex } = metadata;
+                return `Porovnaj výšku každého stĺpca s plánmi. Správny je plán ${String.fromCharCode(65 + correctIndex)}.`;
+            }
             case 'order_operations': {
                 const { hasParentheses, a, b, c } = metadata;
                 if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
@@ -1319,6 +1389,9 @@ const DIAGNOSIS_LABELS: Record<ErrorDiagnosisCode, string> = {
     decimal_sequence: 'desatinné postupnosti',
     decimal_number_line: 'číselná os',
     decimal_arithmetic: 'sčítanie a odčítanie desatinných',
+    cube_plan_count: 'telesá z kociek',
+    cube_solid_count: 'počet kociek v telese',
+    cube_match: 'podlažný plán telesa',
     number_comparison_choice: 'výber prvého alebo druhého čísla',
     rounding_direction: 'smer zaokrúhlenia',
     unit_conversion_direction: 'smer premeny jednotiek',
@@ -1433,6 +1506,12 @@ const classifyAnswer = (problem: Problem, userAnswer: number | string): ErrorDia
             return 'decimal_number_line';
         case 'decimal_arithmetic':
             return 'decimal_arithmetic';
+        case 'cube_plan_count':
+            return 'cube_plan_count';
+        case 'cube_solid_count':
+            return 'cube_solid_count';
+        case 'cube_match':
+            return 'cube_match';
         case 'number_comparison':
             return 'number_comparison_choice';
         case 'rounding':

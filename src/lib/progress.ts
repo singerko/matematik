@@ -435,6 +435,17 @@ const recommendedForDiagnosis = (code: ErrorDiagnosisCode): Problem[] => {
                 { ...createProblem('1,5 − 0,8', 0.7), metadata: { type: 'decimal_arithmetic', left: 1.5, right: 0.8, op: '-', result: 0.7, context: 'plain' } },
                 { ...createProblem('Nákup stojí 3,50 €. Zaplatíš 5 €. Koľko ti vrátia?', 1.5), metadata: { type: 'decimal_arithmetic', left: 5, right: 3.5, op: '-', result: 1.5, context: 'money' } },
             ];
+        case 'cube_plan_count':
+        case 'cube_solid_count':
+            return [
+                { ...createProblem('Koľko kociek má teleso s týmto podlažným plánom?', 6), metadata: { type: 'cube_plan_count', grid: [[1, 2], [3, 0]], question: 'total' } },
+                { ...createProblem('Koľko kociek má teleso s týmto podlažným plánom?', 7), metadata: { type: 'cube_plan_count', grid: [[2, 1], [1, 3]], question: 'total' } },
+                { ...createProblem('Koľko kociek je na sebe v najvyššom stĺpci?', 3), metadata: { type: 'cube_plan_count', grid: [[1, 2], [3, 1]], question: 'max' } },
+            ];
+        case 'cube_match':
+            return [
+                { ...createProblem('Ktorý podlažný plán patrí k telesu?', 0), metadata: { type: 'cube_match', grid: [[1, 2], [3, 0]], options: [[[1, 2], [3, 0]], [[2, 1], [3, 0]], [[1, 2], [0, 3]]], correctIndex: 0 } },
+            ];
         case 'number_comparison_choice':
             return [
                 createProblem('Ktoré číslo je väčšie: 48 alebo 52? 1=prvý, 0=druhý', 0),

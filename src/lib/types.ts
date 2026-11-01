@@ -14,7 +14,7 @@ export type MultiplicationTableTopic =
     | 'multiplication_table_8'
     | 'multiplication_table_9'
     | 'multiplication_table_10';
-export type SchoolTopic = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'large_multiplication' | 'large_division' | 'indian_division' | 'long_division' | 'word_problem' | 'order_operations' | 'divisibility' | 'multiples_divisors' | 'fractions_intro' | 'decimals_intro' | 'number_comparison' | 'rounding' | 'unit_conversion' | 'geometry_area' | 'roman_numerals' | 'money_coins' | 'logical_sequences' | MultiplicationTableTopic;
+export type SchoolTopic = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'large_multiplication' | 'large_division' | 'indian_division' | 'long_division' | 'word_problem' | 'order_operations' | 'divisibility' | 'multiples_divisors' | 'fractions_intro' | 'decimals_intro' | 'cube_solids' | 'number_comparison' | 'rounding' | 'unit_conversion' | 'geometry_area' | 'roman_numerals' | 'money_coins' | 'logical_sequences' | MultiplicationTableTopic;
 
 export type LengthUnit = 'mm' | 'cm' | 'dm' | 'm' | 'km';
 export type WeightUnit = 'g' | 'kg';
@@ -284,6 +284,9 @@ export type ProblemMetadata =
     | { type: 'decimal_sequence'; terms: number[]; step: number; answer: number }
     | { type: 'decimal_number_line'; min: number; max: number; step: number; mark: number }
     | { type: 'decimal_arithmetic'; left: number; right: number; op: '+' | '-'; result: number; context: 'plain' | 'money' }
+    | { type: 'cube_plan_count'; grid: number[][]; question: 'total' | 'max' | 'columns' }
+    | { type: 'cube_solid_count'; grid: number[][] }
+    | { type: 'cube_match'; grid: number[][]; options: number[][][]; correctIndex: number }
     | { type: 'indian_division' }
     | { type: 'long_division' }
     | { type: 'word_problem'; baseTopic?: WordProblemBaseTopic }
@@ -367,6 +370,12 @@ export type ErrorDiagnosisCode =
     | 'decimal_sequence'
     | 'decimal_number_line'
     | 'decimal_arithmetic'
+    | 'cube_plan_count'
+    | 'cube_solid_count'
+    | 'cube_match'
+    | 'cube_plan_count'
+    | 'cube_solid_count'
+    | 'cube_match'
     | 'fraction_equal_parts'
     | 'number_comparison_choice'
     | 'rounding_direction'

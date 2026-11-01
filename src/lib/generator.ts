@@ -673,6 +673,7 @@ const generateSchoolTopicProblem = (settings: Constraints): Problem => {
         if (topic === 'multiples_divisors') return true;
         if (topic === 'fractions_intro') return true;
         if (topic === 'decimals_intro') return true;
+        if (topic === 'cube_solids') return true;
         if (topic === 'number_comparison') return true;
         if (topic === 'rounding') return true;
         if (topic === 'unit_conversion') return true;
@@ -727,6 +728,10 @@ const generateSchoolTopicProblem = (settings: Constraints): Problem => {
 
     if (topic === 'decimals_intro') {
         return generateDecimalIntroProblem();
+    }
+
+    if (topic === 'cube_solids') {
+        return generateCubeSolidProblem();
     }
 
     if (topic === 'number_comparison') {
@@ -1422,6 +1427,157 @@ const generateDecimalToCountProblem = (): Problem => {
             `${formatDecimal(value)} = ${count} ${tenthsWord(count)}.`,
         ],
         metadata: { type: 'decimal_place', value, unit: 'desatiny', count, direction: 'to_count' },
+    };
+};
+
+// Súvislý pôdorys telesa z kociek: mriežka výšok (0 = prázdne, inak počet kociek na sebe).
+const generateCubeGrid = (): number[][] => {
+    const rows = randomInt(2, 3);
+    const cols = randomInt(2, 3);
+    const total = rows * cols;
+    const cellCount = randomInt(Math.min(3, total), total);
+    const grid = Array.from({ length: rows }, () => Array<number>(cols).fill(0));
+    const occupied = new Set<string>();
+    const startR = randomInt(0, rows - 1);
+    const startC = randomInt(0, cols - 1);
+    grid[startR][startC] = randomInt(1, 3);
+    occupied.add(`${startR},${startC}`);
+    const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+    let guard = 0;
+    while (occupied.size < cellCount && guard++ < 100) {
+        const cells = [...occupied].map(s => s.split(',').map(Number));
+        const [br, bc] = randomChoice(cells);
+        const [dr, dc] = randomChoice(dirs);
+        const nr = br + dr;
+        const nc = bc + dc;
+        if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
+        if (occupied.has(`${nr},${nc}`)) continue;
+        grid[nr][nc] = randomInt(1, 3);
+        occupied.add(`${nr},${nc}`);
+    }
+    return grid;
+};
+
+const cubeGridTotal = (grid: number[][]) => grid.flat().reduce((a, b) => a + b, 0);
+const cubeGridMax = (grid: number[][]) => Math.max(...grid.flat());
+const cubeGridColumns = (grid: number[][]) => grid.flat().filter(v => v > 0).length;
+
+const generateCubeSolidProblem = (): Problem => {
+    const mode = randomChoice(['plan', 'plan', 'solid', 'solid', 'match', 'match'] as const);
+    if (mode === 'solid') return generateCubeSolidCountProblem();
+    if (mode === 'match') return generateCubeMatchProblem();
+    return generateCubePlanCountProblem();
+};
+
+const cloneGrid = (grid: number[][]) => grid.map(row => [...row]);
+const gridKey = (grid: number[][]) => grid.map(row => row.join(',')).join('|');
+
+// Zmeň výšku jedného stĺpca (distraktor s iným počtom kociek).
+const changeOneHeight = (grid: number[][]): number[][] => {
+    const next = cloneGrid(grid);
+    const cells: [number, number][] = [];
+    next.forEach((row, r) => row.forEach((v, c) => { if (v > 0) cells.push([r, c]); }));
+    const [r, c] = randomChoice(cells);
+    next[r][c] = next[r][c] >= 3 ? next[r][c] - 1 : next[r][c] + (Math.random() < 0.5 && next[r][c] > 1 ? -1 : 1);
+    return next;
+};
+
+// Vymeň výšky dvoch stĺpcov (distraktor s rovnakým počtom, iné rozloženie).
+const swapTwoHeights = (grid: number[][]): number[][] => {
+    const next = cloneGrid(grid);
+    const cells: [number, number][] = [];
+    next.forEach((row, r) => row.forEach((v, c) => { if (v > 0) cells.push([r, c]); }));
+    for (let attempt = 0; attempt < 20; attempt++) {
+        const [r1, c1] = randomChoice(cells);
+        const [r2, c2] = randomChoice(cells);
+        if (next[r1][c1] !== next[r2][c2]) {
+            const tmp = next[r1][c1];
+            next[r1][c1] = next[r2][c2];
+            next[r2][c2] = tmp;
+            return next;
+        }
+    }
+    return changeOneHeight(next);
+};
+
+// 3D teleso → vyber jeho správny podlažný plán (A/B/C).
+const generateCubeMatchProblem = (): Problem => {
+    const grid = generateCubeGrid();
+    const options: number[][][] = [grid];
+    const seen = new Set([gridKey(grid)]);
+    let guard = 0;
+    while (options.length < 3 && guard++ < 40) {
+        const distractor = Math.random() < 0.5 ? changeOneHeight(grid) : swapTwoHeights(grid);
+        if (!seen.has(gridKey(distractor))) {
+            seen.add(gridKey(distractor));
+            options.push(distractor);
+        }
+    }
+    // premiešaj
+    for (let i = options.length - 1; i > 0; i--) {
+        const j = randomInt(0, i);
+        [options[i], options[j]] = [options[j], options[i]];
+    }
+    const correctIndex = options.findIndex(o => gridKey(o) === gridKey(grid));
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Ktorý podlažný plán patrí k tomuto telesu?`,
+        result: correctIndex,
+        steps: [
+            `V pláne je v každom políčku počet kociek na sebe.`,
+            `Správny je plán ${String.fromCharCode(65 + correctIndex)}.`,
+        ],
+        metadata: { type: 'cube_match', grid, options, correctIndex },
+    };
+};
+
+// 3D teleso (izometrické) → spočítaj všetky kocky vrátane skrytých.
+const generateCubeSolidCountProblem = (): Problem => {
+    const grid = generateCubeGrid();
+    const total = cubeGridTotal(grid);
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Koľko kociek má toto teleso?`,
+        result: total,
+        steps: [
+            `Nezabudni aj na skryté kocky vzadu a pod inými.`,
+            `Spočítaj kocky po stĺpcoch: spolu ${total} kociek.`,
+        ],
+        metadata: { type: 'cube_solid_count', grid },
+    };
+};
+
+// Z podlažného plánu (mriežka s číslami) urči počet kociek / najvyšší stĺpec / počet stĺpcov.
+const generateCubePlanCountProblem = (): Problem => {
+    const grid = generateCubeGrid();
+    const question = randomChoice(['total', 'total', 'max', 'columns'] as const);
+    const total = cubeGridTotal(grid);
+    const max = cubeGridMax(grid);
+    const columns = cubeGridColumns(grid);
+    const answer = question === 'total' ? total : question === 'max' ? max : columns;
+
+    const expression = question === 'total'
+        ? `Koľko kociek má teleso s týmto podlažným plánom?`
+        : question === 'max'
+            ? `Koľko kociek je na sebe v najvyššom stĺpci?`
+            : `Z koľkých stĺpcov (políčok) sa teleso skladá?`;
+
+    const steps = question === 'total'
+        ? [`Číslo v políčku = počet kociek na sebe.`, `Spočítaj všetky čísla: spolu ${total} kociek.`]
+        : question === 'max'
+            ? [`Hľadaj najväčšie číslo v pláne.`, `Najvyšší stĺpec má ${max} kociek.`]
+            : [`Spočítaj políčka, kde je aspoň jedna kocka.`, `Teleso stojí na ${columns} stĺpcoch.`];
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression,
+        result: answer,
+        steps,
+        metadata: { type: 'cube_plan_count', grid, question },
     };
 };
 

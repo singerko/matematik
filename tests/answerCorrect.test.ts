@@ -448,3 +448,59 @@ test('decimal money change answer', () => {
     assert.equal(isAnswerCorrect(decimalMoney, '1,5'), true);
     assert.equal(isAnswerCorrect(decimalMoney, 1.6), false);
 });
+
+const cubeTotal = problem(
+    'Koľko kociek má teleso s týmto podlažným plánom?',
+    6,
+    { type: 'cube_plan_count', grid: [[1, 2], [3, 0]], question: 'total' },
+);
+
+test('cube plan total counts all stacked cubes', () => {
+    assert.equal(isAnswerCorrect(cubeTotal, 6), true);
+    assert.equal(isAnswerCorrect(cubeTotal, 4), false);
+});
+
+const cubeMax = problem(
+    'Koľko kociek je na sebe v najvyššom stĺpci?',
+    3,
+    { type: 'cube_plan_count', grid: [[1, 2], [3, 0]], question: 'max' },
+);
+
+test('cube plan max is the tallest column', () => {
+    assert.equal(isAnswerCorrect(cubeMax, 3), true);
+    assert.equal(isAnswerCorrect(cubeMax, 6), false);
+});
+
+const cubeColumns = problem(
+    'Z koľkých stĺpcov (políčok) sa teleso skladá?',
+    3,
+    { type: 'cube_plan_count', grid: [[1, 2], [3, 0]], question: 'columns' },
+);
+
+test('cube plan columns counts non-empty cells', () => {
+    assert.equal(isAnswerCorrect(cubeColumns, 3), true);
+    assert.equal(isAnswerCorrect(cubeColumns, 4), false);
+});
+
+const cubeSolid = problem(
+    'Koľko kociek má toto teleso?',
+    7,
+    { type: 'cube_solid_count', grid: [[2, 1], [1, 3]] },
+);
+
+test('cube solid count includes hidden cubes', () => {
+    assert.equal(isAnswerCorrect(cubeSolid, 7), true);
+    assert.equal(isAnswerCorrect(cubeSolid, 4), false);
+});
+
+const cubeMatch = problem(
+    'Ktorý podlažný plán patrí k tomuto telesu?',
+    0,
+    { type: 'cube_match', grid: [[1, 2], [3, 0]], options: [[[1, 2], [3, 0]], [[2, 1], [3, 0]], [[1, 2], [0, 3]]], correctIndex: 0 },
+);
+
+test('cube match selects correct plan index', () => {
+    assert.equal(isAnswerCorrect(cubeMatch, 0), true);
+    assert.equal(isAnswerCorrect(cubeMatch, 1), false);
+    assert.equal(isAnswerCorrect(cubeMatch, 2), false);
+});
