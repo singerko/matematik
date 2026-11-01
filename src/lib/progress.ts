@@ -446,6 +446,17 @@ const recommendedForDiagnosis = (code: ErrorDiagnosisCode): Problem[] => {
             return [
                 { ...createProblem('Ktorý podlažný plán patrí k telesu?', 0), metadata: { type: 'cube_match', grid: [[1, 2], [3, 0]], options: [[[1, 2], [3, 0]], [[2, 1], [3, 0]], [[1, 2], [0, 3]]], correctIndex: 0 } },
             ];
+        case 'coin_equation':
+            return [
+                { ...createProblem('Rovnaké mince majú rovnakú hodnotu. Koľko centov má jedna neznáma minca?', 2), metadata: { type: 'coin_equation', leftValues: [5, 1], knownOnRight: [], unknownCount: 3, unit: 'c', answer: 2 } },
+                { ...createProblem('Rovnaké mince majú rovnakú hodnotu. Koľko centov má jedna neznáma minca?', 5), metadata: { type: 'coin_equation', leftValues: [10], knownOnRight: [], unknownCount: 2, unit: 'c', answer: 5 } },
+                { ...createProblem('Rovnaké kocky sú rovnako ťažké. Koľko kg váži jedna kocka?', 2), metadata: { type: 'coin_equation', leftValues: [5, 1], knownOnRight: [], unknownCount: 3, unit: 'kg', answer: 2 } },
+            ];
+        case 'coin_payment':
+            return [
+                { ...createProblem('Najmenej koľkými mincami zaplatíš 7 c?', 2), metadata: { type: 'coin_payment', amount: 7, variant: 'fewest', answer: 2 } },
+                { ...createProblem('Dá sa zaplatiť 7 c práve 3 mincami? 1=áno, 0=nie', 1), metadata: { type: 'coin_payment', amount: 7, variant: 'exact_possible', exactCount: 3, answer: 1 } },
+            ];
         case 'number_comparison_choice':
             return [
                 createProblem('Ktoré číslo je väčšie: 48 alebo 52? 1=prvý, 0=druhý', 0),

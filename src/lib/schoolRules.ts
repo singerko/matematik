@@ -154,7 +154,7 @@ export const getGradeCapabilities = (grade: SchoolGrade): GradeCapabilities => {
             };
         case 'grade5':
             return {
-                availableTopics: ['multiplication', 'division', 'long_division', 'order_operations', 'divisibility', 'multiples_divisors', 'fractions_intro', 'decimals_intro', 'cube_solids', 'word_problem', 'rounding', 'unit_conversion', 'geometry_area'],
+                availableTopics: ['multiplication', 'division', 'long_division', 'order_operations', 'divisibility', 'multiples_divisors', 'fractions_intro', 'decimals_intro', 'cube_solids', 'coin_equations', 'word_problem', 'rounding', 'unit_conversion', 'geometry_area'],
                 maxProblemCount: 50,
                 multiplication: {
                     selectableTables: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],

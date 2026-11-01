@@ -54,7 +54,7 @@ export const GRADE_CONTENT: GradeContentOverview[] = [
         label: '5. ročník',
         goal: 'Prechod k výrazom, deliteľnosti, zlomkom a desatinným číslam.',
         sections: [
-            { title: 'Témy', items: ['poradie operácií', 'zátvorky', 'deliteľnosť', 'násobky a delitele', 'úvod do zlomkov', 'desatinné čísla', 'telesá z kociek', 'zaokrúhľovanie', 'premena jednotiek'] },
+            { title: 'Témy', items: ['poradie operácií', 'zátvorky', 'deliteľnosť', 'násobky a delitele', 'úvod do zlomkov', 'desatinné čísla', 'telesá z kociek', 'mincové rovnice', 'zaokrúhľovanie', 'premena jednotiek'] },
             { title: 'Doučovanie', items: ['vizuálne poradie operácií a zátvorky', 'áno/nie pri deliteľnosti', 'vizuálne zlomky a porovnávanie', 'desatinné čísla a zlomky'] },
         ],
     },

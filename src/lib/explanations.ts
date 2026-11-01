@@ -759,6 +759,47 @@ const explainByMetadata = (problem: Problem, metadata: ProblemMetadata): Problem
                 recommendation: 'Precvič počítanie kociek vrátane skrytých.',
             };
         }
+        case 'coin_equation': {
+            const { leftValues, knownOnRight, unknownCount, unit, answer } = metadata;
+            const leftSum = leftValues.reduce((a, b) => a + b, 0);
+            const rightKnown = knownOnRight.reduce((a, b) => a + b, 0);
+            const net = leftSum - rightKnown;
+            return {
+                topic: 'mincové rovnice',
+                hint: `Zisti, koľko ${unit} pripadá na neznáme, a rozdeľ to medzi ${unknownCount} rovnaké.`,
+                hints: [
+                    rightKnown > 0
+                        ? { id: 'move', title: 'odober známe', text: `Od ľavej strany (${leftSum}) odober známe vpravo (${rightKnown}): zostane ${net} ${unit} na neznáme.` }
+                        : { id: 'sum', title: 'spočítaj vľavo', text: `Vľavo je spolu ${leftSum} ${unit}.` },
+                    { id: 'divide', title: 'rozdeľ', text: `${net} : ${unknownCount} = ${answer} ${unit} na jednu neznámu.` },
+                ],
+                steps: [
+                    rightKnown > 0 ? `Obe strany zmenši o známe mince vpravo: zostane ${net} ${unit} = ${unknownCount} neznámych.` : `Vľavo je spolu ${net} ${unit}.`,
+                    `${net} : ${unknownCount} = ${answer} ${unit} má jedna neznáma.`,
+                ],
+                recommendation: 'Precvič mincové rovnice (koľko pripadá na jednu neznámu).',
+            };
+        }
+        case 'coin_payment': {
+            const { amount, variant, exactCount, answer } = metadata;
+            if (variant === 'fewest') {
+                return {
+                    topic: 'platenie mincami',
+                    hint: `Ber vždy najväčšiu mincu, ktorá sa ešte zmestí (50, 20, 10, 5, 2, 1 c).`,
+                    steps: [`Postupne ber najväčšie mince.`, `${amount} c sa dá zaplatiť ${answer} mincami.`],
+                    recommendation: 'Precvič platenie najmenším počtom mincí.',
+                };
+            }
+            return {
+                topic: 'platenie mincami',
+                hint: `Najmenej treba toľko mincí ako pri najväčších minciach, najviac ${amount} (samé 1 c).`,
+                steps: [
+                    `Zisti najmenší počet mincí a porovnaj s ${exactCount}.`,
+                    answer === 1 ? `${amount} c sa práve ${exactCount} mincami dá.` : `${amount} c sa práve ${exactCount} mincami nedá.`,
+                ],
+                recommendation: 'Precvič, koľkými mincami sa dá zaplatiť suma.',
+            };
+        }
         case 'cube_match': {
             const { correctIndex } = metadata;
             const letter = String.fromCharCode(65 + correctIndex);
@@ -1263,6 +1304,20 @@ export const diagnoseAnswer = (problem: Problem, userAnswer: number | string): s
                 const { correctIndex } = metadata;
                 return `Porovnaj výšku každého stĺpca s plánmi. Správny je plán ${String.fromCharCode(65 + correctIndex)}.`;
             }
+            case 'coin_equation': {
+                const { leftValues, knownOnRight, unknownCount, unit, answer } = metadata;
+                const net = leftValues.reduce((a, b) => a + b, 0) - knownOnRight.reduce((a, b) => a + b, 0);
+                if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
+                return `Na neznáme pripadá ${net} ${unit}, rozdelené medzi ${unknownCount}: ${net} : ${unknownCount} = ${answer} ${unit}.`;
+            }
+            case 'coin_payment': {
+                const { amount, variant, exactCount, answer } = metadata;
+                return variant === 'fewest'
+                    ? `Postupne ber najväčšie mince — ${amount} c sa dá zaplatiť ${answer} mincami.`
+                    : answer === 1
+                        ? `${amount} c sa práve ${exactCount} mincami zaplatiť dá.`
+                        : `${amount} c sa práve ${exactCount} mincami zaplatiť nedá.`;
+            }
             case 'order_operations': {
                 const { hasParentheses, a, b, c } = metadata;
                 if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
@@ -1392,6 +1447,8 @@ const DIAGNOSIS_LABELS: Record<ErrorDiagnosisCode, string> = {
     cube_plan_count: 'telesá z kociek',
     cube_solid_count: 'počet kociek v telese',
     cube_match: 'podlažný plán telesa',
+    coin_equation: 'mincové rovnice',
+    coin_payment: 'platenie mincami',
     number_comparison_choice: 'výber prvého alebo druhého čísla',
     rounding_direction: 'smer zaokrúhlenia',
     unit_conversion_direction: 'smer premeny jednotiek',
@@ -1512,6 +1569,10 @@ const classifyAnswer = (problem: Problem, userAnswer: number | string): ErrorDia
             return 'cube_solid_count';
         case 'cube_match':
             return 'cube_match';
+        case 'coin_equation':
+            return 'coin_equation';
+        case 'coin_payment':
+            return 'coin_payment';
         case 'number_comparison':
             return 'number_comparison_choice';
         case 'rounding':

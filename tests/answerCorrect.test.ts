@@ -504,3 +504,57 @@ test('cube match selects correct plan index', () => {
     assert.equal(isAnswerCorrect(cubeMatch, 1), false);
     assert.equal(isAnswerCorrect(cubeMatch, 2), false);
 });
+
+const coinEqProblem = problem(
+    'Rovnaké mince majú rovnakú hodnotu. Koľko centov má jedna neznáma minca?',
+    2,
+    { type: 'coin_equation', leftValues: [5, 1], knownOnRight: [], unknownCount: 3, unit: 'c', answer: 2 },
+);
+
+test('coin equation solves n*x = sum', () => {
+    assert.equal(isAnswerCorrect(coinEqProblem, 2), true);
+    assert.equal(isAnswerCorrect(coinEqProblem, 6), false);
+    assert.equal(isAnswerCorrect(coinEqProblem, 3), false);
+});
+
+const coinEqTerm = problem(
+    'Rovnaké mince majú rovnakú hodnotu. Koľko centov má jedna neznáma minca?',
+    5,
+    { type: 'coin_equation', leftValues: [10, 5], knownOnRight: [5], unknownCount: 2, unit: 'c', answer: 5 },
+);
+
+test('coin equation with extra known term: n*x + b = sum', () => {
+    assert.equal(isAnswerCorrect(coinEqTerm, 5), true);
+    assert.equal(isAnswerCorrect(coinEqTerm, 7), false);
+});
+
+const coinFewest = problem(
+    'Najmenej koľkými mincami zaplatíš 18 c?',
+    4,
+    { type: 'coin_payment', amount: 18, variant: 'fewest', answer: 4 },
+);
+
+test('coin payment fewest count', () => {
+    assert.equal(isAnswerCorrect(coinFewest, 4), true);
+    assert.equal(isAnswerCorrect(coinFewest, 5), false);
+});
+
+const coinExactYes = problem(
+    'Dá sa zaplatiť 7 c práve 3 mincami? 1=áno, 0=nie',
+    1,
+    { type: 'coin_payment', amount: 7, variant: 'exact_possible', exactCount: 3, answer: 1 },
+);
+
+const coinExactNo = problem(
+    'Dá sa zaplatiť 9 c práve 2 mincami? 1=áno, 0=nie',
+    0,
+    { type: 'coin_payment', amount: 9, variant: 'exact_possible', exactCount: 2, answer: 0 },
+);
+
+test('coin payment exact possibility yes/no', () => {
+    assert.equal(isAnswerCorrect(coinExactYes, 1), true);
+    assert.equal(isAnswerCorrect(coinExactYes, 'áno'), true);
+    assert.equal(isAnswerCorrect(coinExactNo, 0), true);
+    assert.equal(isAnswerCorrect(coinExactNo, 'nie'), true);
+    assert.equal(isAnswerCorrect(coinExactNo, 1), false);
+});

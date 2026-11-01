@@ -14,7 +14,7 @@ export type MultiplicationTableTopic =
     | 'multiplication_table_8'
     | 'multiplication_table_9'
     | 'multiplication_table_10';
-export type SchoolTopic = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'large_multiplication' | 'large_division' | 'indian_division' | 'long_division' | 'word_problem' | 'order_operations' | 'divisibility' | 'multiples_divisors' | 'fractions_intro' | 'decimals_intro' | 'cube_solids' | 'number_comparison' | 'rounding' | 'unit_conversion' | 'geometry_area' | 'roman_numerals' | 'money_coins' | 'logical_sequences' | MultiplicationTableTopic;
+export type SchoolTopic = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'large_multiplication' | 'large_division' | 'indian_division' | 'long_division' | 'word_problem' | 'order_operations' | 'divisibility' | 'multiples_divisors' | 'fractions_intro' | 'decimals_intro' | 'cube_solids' | 'coin_equations' | 'number_comparison' | 'rounding' | 'unit_conversion' | 'geometry_area' | 'roman_numerals' | 'money_coins' | 'logical_sequences' | MultiplicationTableTopic;
 
 export type LengthUnit = 'mm' | 'cm' | 'dm' | 'm' | 'km';
 export type WeightUnit = 'g' | 'kg';
@@ -287,6 +287,8 @@ export type ProblemMetadata =
     | { type: 'cube_plan_count'; grid: number[][]; question: 'total' | 'max' | 'columns' }
     | { type: 'cube_solid_count'; grid: number[][] }
     | { type: 'cube_match'; grid: number[][]; options: number[][][]; correctIndex: number }
+    | { type: 'coin_equation'; leftValues: number[]; knownOnRight: number[]; unknownCount: number; unit: 'c' | 'kg'; answer: number }
+    | { type: 'coin_payment'; amount: number; variant: 'fewest' | 'exact_possible'; exactCount?: number; answer: number }
     | { type: 'indian_division' }
     | { type: 'long_division' }
     | { type: 'word_problem'; baseTopic?: WordProblemBaseTopic }
@@ -373,9 +375,8 @@ export type ErrorDiagnosisCode =
     | 'cube_plan_count'
     | 'cube_solid_count'
     | 'cube_match'
-    | 'cube_plan_count'
-    | 'cube_solid_count'
-    | 'cube_match'
+    | 'coin_equation'
+    | 'coin_payment'
     | 'fraction_equal_parts'
     | 'number_comparison_choice'
     | 'rounding_direction'

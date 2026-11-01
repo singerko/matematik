@@ -607,6 +607,40 @@ const FractionCompareBars: React.FC<{ leftNum: number; leftDen: number; rightNum
     );
 };
 
+// Mincová / váhová rovnica: známe mince/závažia vľavo = neznáme (žlté „?") vpravo.
+const CoinToken: React.FC<{ label: string; known: boolean; square: boolean }> = ({ label, known, square }) => (
+    <div style={{
+        width: 46,
+        height: 46,
+        borderRadius: square ? 8 : '50%',
+        background: known ? '#cbd5e1' : '#fde047',
+        border: '2px solid #334155',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 900,
+        fontSize: label.length > 2 ? '0.78rem' : '1rem',
+        color: '#1f2937',
+    }}>{label}</div>
+);
+
+const CoinEquationView: React.FC<{ leftValues: number[]; knownOnRight: number[]; unknownCount: number; unit: 'c' | 'kg' }> = ({ leftValues, knownOnRight, unknownCount, unit }) => {
+    const square = unit === 'kg';
+    const label = (v: number) => `${v}${unit}`;
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                {leftValues.map((v, i) => <CoinToken key={i} label={label(v)} known square={square} />)}
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 900, color: '#f8fafc' }}>=</div>
+            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                {knownOnRight.map((v, i) => <CoinToken key={`k${i}`} label={label(v)} known square={square} />)}
+                {Array.from({ length: unknownCount }).map((_, i) => <CoinToken key={`u${i}`} label="?" known={false} square={square} />)}
+            </div>
+        </div>
+    );
+};
+
 // Podlažný plán telesa z kociek — pohľad zhora, číslo = počet kociek na sebe.
 const CubePlanView: React.FC<{ grid: number[][]; cell?: number }> = ({ grid, cell = 44 }) => {
     const rows = grid.length;
@@ -1638,6 +1672,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
     const cubePlanMeta = currentMeta?.type === 'cube_plan_count' ? currentMeta : null;
     const cubeSolidMeta = currentMeta?.type === 'cube_solid_count' ? currentMeta : null;
     const cubeMatchMeta = currentMeta?.type === 'cube_match' ? currentMeta : null;
+    const coinEqMeta = currentMeta?.type === 'coin_equation' ? currentMeta : null;
     const isLongDivision = isLongDivisionProblem(currentProblem);
     const expectedWordOperation = getWordProblemOperation(currentProblem);
     const firstIntermediateStep = getFirstIntermediateStep(currentProblem);
@@ -1921,6 +1956,11 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                     {cubeSolidMeta && (
                                         <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
                                             <CubeSolidView grid={cubeSolidMeta.grid} />
+                                        </div>
+                                    )}
+                                    {coinEqMeta && (
+                                        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                                            <CoinEquationView leftValues={coinEqMeta.leftValues} knownOnRight={coinEqMeta.knownOnRight} unknownCount={coinEqMeta.unknownCount} unit={coinEqMeta.unit} />
                                         </div>
                                     )}
                                     <div style={{

@@ -674,6 +674,7 @@ const generateSchoolTopicProblem = (settings: Constraints): Problem => {
         if (topic === 'fractions_intro') return true;
         if (topic === 'decimals_intro') return true;
         if (topic === 'cube_solids') return true;
+        if (topic === 'coin_equations') return true;
         if (topic === 'number_comparison') return true;
         if (topic === 'rounding') return true;
         if (topic === 'unit_conversion') return true;
@@ -732,6 +733,10 @@ const generateSchoolTopicProblem = (settings: Constraints): Problem => {
 
     if (topic === 'cube_solids') {
         return generateCubeSolidProblem();
+    }
+
+    if (topic === 'coin_equations') {
+        return generateCoinEquationProblem();
     }
 
     if (topic === 'number_comparison') {
@@ -1578,6 +1583,125 @@ const generateCubePlanCountProblem = (): Problem => {
         result: answer,
         steps,
         metadata: { type: 'cube_plan_count', grid, question },
+    };
+};
+
+// Rozlož sumu na mince/závažia (greedy od najväčších) — vráti zoznam hodnôt.
+const COIN_SET = [50, 20, 10, 5, 2, 1];
+const WEIGHT_SET = [10, 5, 2, 1];
+const greedyCoins = (amount: number, set: number[]): number[] => {
+    const coins: number[] = [];
+    let rem = amount;
+    for (const c of set) {
+        while (rem >= c) { coins.push(c); rem -= c; }
+    }
+    return coins;
+};
+
+const generateCoinEquationProblem = (): Problem => {
+    const r = Math.random();
+    if (r < 0.3) return generateCoinPaymentProblem();
+    if (r < 0.6) return generateCoinEquationWithTermProblem();
+    return generateCoinEquationBasicProblem();
+};
+
+// Dá sa suma zaplatiť práve `k` mincami? (DP cez počet mincí)
+const canPayExactly = (amount: number, k: number): boolean => {
+    let reachable = new Set<number>([0]);
+    for (let j = 0; j < k; j++) {
+        const next = new Set<number>();
+        for (const a of reachable) {
+            for (const c of COIN_SET) {
+                if (a + c <= amount) next.add(a + c);
+            }
+        }
+        reachable = next;
+    }
+    return reachable.has(amount);
+};
+
+// Platenie mincami: najmenší počet mincí / dá sa práve k mincami.
+const generateCoinPaymentProblem = (): Problem => {
+    const fewest = Math.random() < 0.5;
+    if (fewest) {
+        const amount = randomInt(3, 30);
+        const count = greedyCoins(amount, COIN_SET).length;
+        return {
+            id: uniqueId(),
+            kind: 'standard',
+            expression: `Najmenej koľkými mincami zaplatíš ${amount} c?`,
+            result: count,
+            steps: [
+                `Ber vždy najväčšiu mincu, ktorá sa zmestí.`,
+                `${amount} c sa dá zaplatiť už ${count} mincami.`,
+            ],
+            metadata: { type: 'coin_payment', amount, variant: 'fewest', answer: count },
+        };
+    }
+    const amount = randomInt(3, 25);
+    const exactCount = randomInt(2, 5);
+    const possible = canPayExactly(amount, exactCount);
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Dá sa zaplatiť ${amount} c práve ${exactCount} mincami? 1=áno, 0=nie`,
+        result: possible ? 1 : 0,
+        steps: [
+            `Najmenej treba ${greedyCoins(amount, COIN_SET).length} mincí, najviac ${amount} (samé 1 c).`,
+            possible
+                ? `${amount} c sa práve ${exactCount} mincami zaplatiť dá.`
+                : `${amount} c sa práve ${exactCount} mincami zaplatiť nedá.`,
+        ],
+        metadata: { type: 'coin_payment', amount, variant: 'exact_possible', exactCount, answer: possible ? 1 : 0 },
+    };
+};
+
+// Rovnica s pridaným známym členom: n·x + známa minca = súčet známych vľavo.
+const generateCoinEquationWithTermProblem = (): Problem => {
+    const unknownCount = randomInt(2, 3);
+    const x = randomChoice([2, 5, 10]);
+    const extra = randomChoice([1, 2, 5]);
+    const leftSum = unknownCount * x + extra;
+    const leftValues = greedyCoins(leftSum, COIN_SET);
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Rovnaké mince majú rovnakú hodnotu. Koľko centov má jedna neznáma minca?`,
+        result: x,
+        steps: [
+            `Vľavo je spolu ${leftSum} c, vpravo ${unknownCount} neznámych a minca ${extra} c.`,
+            `Obe strany zmenši o ${extra} c: zostane ${leftSum - extra} c = ${unknownCount} neznámych.`,
+            `${leftSum - extra} : ${unknownCount} = ${x} c má jedna neznáma.`,
+        ],
+        metadata: { type: 'coin_equation', leftValues, knownOnRight: [extra], unknownCount, unit: 'c', answer: x },
+    };
+};
+
+// Mincová/váhová rovnica n·x = súčet známych → nájdi hodnotu jednej neznámej.
+const generateCoinEquationBasicProblem = (): Problem => {
+    const weight = Math.random() < 0.3;
+    const unit: 'c' | 'kg' = weight ? 'kg' : 'c';
+    const set = weight ? WEIGHT_SET : COIN_SET;
+    const unknownCount = randomInt(2, 4);
+    const x = weight ? randomChoice([1, 2, 3, 5]) : randomChoice([1, 2, 5, 10]);
+    const sum = unknownCount * x;
+    const leftValues = greedyCoins(sum, set);
+
+    const expression = weight
+        ? `Rovnaké kocky sú rovnako ťažké. Koľko kg váži jedna kocka?`
+        : `Rovnaké mince majú rovnakú hodnotu. Koľko centov má jedna neznáma minca?`;
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression,
+        result: x,
+        steps: [
+            `Vľavo je spolu ${sum} ${unit}.`,
+            `Vpravo je ${unknownCount} rovnakých, preto ${sum} : ${unknownCount} = ${x} ${unit}.`,
+        ],
+        metadata: { type: 'coin_equation', leftValues, knownOnRight: [], unknownCount, unit, answer: x },
     };
 };
 
