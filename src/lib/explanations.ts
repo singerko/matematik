@@ -832,10 +832,11 @@ const explainByMetadata = (problem: Problem, metadata: ProblemMetadata): Problem
             const { answer } = metadata;
             return {
                 topic: 'čítanie z číselnej osi',
-                hint: `Zisti, akú hodnotu má jeden dielik, a dopočítaj hľadaný bod.`,
+                hint: `Jeden dielik na osi je 1. Od olabelovaného čísla odrátaj alebo prirátaj dieliky po šípku.`,
                 steps: [
-                    `Z dvoch známych bodov urči dĺžku jedného dielika.`,
-                    `Hľadaný bod je ${answer}.`,
+                    `Každý dielik medzi čiarkami znamená 1.`,
+                    `Spočítaj dieliky od známeho čísla po šípku.`,
+                    `Pri šípke je číslo ${answer}.`,
                 ],
                 recommendation: 'Precvič čítanie hodnôt z číselnej osi.',
             };
@@ -1354,7 +1355,7 @@ export const diagnoseAnswer = (problem: Problem, userAnswer: number | string): s
             case 'number_line_read': {
                 const { answer } = metadata;
                 if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
-                return `Urči hodnotu jedného dielika z dvoch známych bodov. Hľadaný bod je ${answer}.`;
+                return `Jeden dielik je 1. Spočítaj dieliky od známeho čísla po šípku — pri šípke je ${answer}.`;
             }
             case 'coin_equation': {
                 const { leftValues, knownOnRight, unknownCount, unit, answer } = metadata;

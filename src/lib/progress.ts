@@ -464,7 +464,7 @@ const recommendedForDiagnosis = (code: ErrorDiagnosisCode): Problem[] => {
             ];
         case 'number_line_read':
             return [
-                { ...createProblem('Aké číslo je v označenom bode na číselnej osi?', 2), metadata: { type: 'number_line_read', min: 0, max: 1, marks: [{ value: 1, pos: 0.25 }, { value: 3, pos: 0.75 }], askPos: 0.5, answer: 2 } },
+                { ...createProblem('Aké číslo patrí na číselnej osi k šípke?', 1), metadata: { type: 'number_line_read', ticks: [1, 2, 3, 4, 5], labeledIndices: [2, 3], askIndex: 0, answer: 1 } },
             ];
         case 'number_comparison_choice':
             return [

@@ -609,25 +609,29 @@ const FractionCompareBars: React.FC<{ leftNum: number; leftDen: number; rightNum
     );
 };
 
-// Číselná os s dvoma známymi bodmi a jedným hľadaným (červená šípka).
-const NumberLineReadView: React.FC<{ marks: { value: number; pos: number }[]; askPos: number }> = ({ marks, askPos }) => {
+// Číselná os s dielikmi na každej jednotke; dva body olabelované, jeden označený šípkou „?".
+const NumberLineReadView: React.FC<{ ticks: number[]; labeledIndices: number[]; askIndex: number }> = ({ ticks, labeledIndices, askIndex }) => {
     const W = 340;
     const H = 86;
-    const pad = 22;
+    const pad = 26;
     const axisY = 52;
-    const sx = (pos: number) => pad + pos * (W - 2 * pad);
+    const n = ticks.length;
+    const sx = (i: number) => pad + (n > 1 ? (i / (n - 1)) * (W - 2 * pad) : 0);
     return (
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Číselná os">
-            <line x1={pad - 6} y1={axisY} x2={W - pad + 6} y2={axisY} stroke="#94a3b8" strokeWidth={2} strokeLinecap="round" />
-            {marks.map((m, i) => (
-                <g key={i}>
-                    <line x1={sx(m.pos)} y1={axisY - 6} x2={sx(m.pos)} y2={axisY + 6} stroke="#cbd5e1" strokeWidth={2.5} />
-                    <text x={sx(m.pos)} y={axisY + 22} textAnchor="middle" fontSize="15" fill="#e2e8f0" fontWeight="800">{m.value}</text>
-                </g>
-            ))}
-            <path d={`M ${sx(askPos)} ${axisY - 7} L ${sx(askPos) - 6} ${axisY - 22} L ${sx(askPos) + 6} ${axisY - 22} Z`} fill="#dc2626" />
-            <line x1={sx(askPos)} y1={axisY - 7} x2={sx(askPos)} y2={axisY - 22} stroke="#dc2626" strokeWidth={2} />
-            <text x={sx(askPos)} y={axisY - 28} textAnchor="middle" fontSize="16" fill="#f87171" fontWeight="900">?</text>
+            <line x1={pad - 10} y1={axisY} x2={W - pad + 10} y2={axisY} stroke="#94a3b8" strokeWidth={2} strokeLinecap="round" />
+            {ticks.map((value, i) => {
+                const labeled = labeledIndices.includes(i);
+                return (
+                    <g key={i}>
+                        <line x1={sx(i)} y1={axisY - 6} x2={sx(i)} y2={axisY + 6} stroke="#cbd5e1" strokeWidth={labeled ? 2.5 : 1.5} />
+                        {labeled && <text x={sx(i)} y={axisY + 22} textAnchor="middle" fontSize="15" fill="#e2e8f0" fontWeight="800">{value}</text>}
+                    </g>
+                );
+            })}
+            <path d={`M ${sx(askIndex)} ${axisY - 7} L ${sx(askIndex) - 6} ${axisY - 22} L ${sx(askIndex) + 6} ${axisY - 22} Z`} fill="#dc2626" />
+            <line x1={sx(askIndex)} y1={axisY - 7} x2={sx(askIndex)} y2={axisY - 22} stroke="#dc2626" strokeWidth={2} />
+            <text x={sx(askIndex)} y={axisY - 28} textAnchor="middle" fontSize="16" fill="#f87171" fontWeight="900">?</text>
         </svg>
     );
 };
@@ -2044,7 +2048,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                     )}
                                     {numberLineReadMeta && (
                                         <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
-                                            <NumberLineReadView marks={numberLineReadMeta.marks} askPos={numberLineReadMeta.askPos} />
+                                            <NumberLineReadView ticks={numberLineReadMeta.ticks} labeledIndices={numberLineReadMeta.labeledIndices} askIndex={numberLineReadMeta.askIndex} />
                                         </div>
                                     )}
                                     <div style={{

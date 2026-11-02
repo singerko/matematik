@@ -1719,43 +1719,34 @@ const generateEgyptianProblem = (): Problem => {
     return generateEgyptShareProblem();
 };
 
-// Číselná os: z dvoch vyznačených bodov (hodnota + poloha) dopočítaj hodnotu tretieho.
+// Číselná os s dielikmi na každej jednotke: dva body sú olabelované, jeden označený šípkou.
+// Žiak dopočíta hodnotu odrátaním dielikov od známeho bodu.
 const generateNumberLineReadProblem = (): Problem => {
-    for (let attempt = 0; attempt < 40; attempt++) {
-        const u = randomChoice([0.12, 0.15, 0.18, 0.2, 0.25]); // poloha na jednotku
-        const o = 0.12 + Math.random() * 0.3; // poloha nuly
-        const candidates: { value: number; pos: number }[] = [];
-        for (let v = -4; v <= 9; v++) {
-            const pos = o + v * u;
-            if (pos >= 0.08 && pos <= 0.92) candidates.push({ value: v, pos });
-        }
-        if (candidates.length < 3) continue;
-        // vyber 3 rôzne (dva známe, jeden hľadaný)
-        const idxs = new Set<number>();
-        while (idxs.size < 3) idxs.add(randomInt(0, candidates.length - 1));
-        const [i1, i2, i3] = [...idxs];
-        const marks = [candidates[i1], candidates[i2]];
-        const ask = candidates[i3];
-        return {
-            id: uniqueId(),
-            kind: 'standard',
-            expression: `Aké číslo je na číselnej osi v bode označenom šípkou?`,
-            result: ask.value,
-            steps: [
-                `Z dvoch známych bodov zisti, aká vzdialenosť zodpovedá jednému číslu.`,
-                `V označenom bode je číslo ${ask.value}.`,
-            ],
-            metadata: { type: 'number_line_read', min: 0, max: 1, marks, askPos: ask.pos, answer: ask.value },
-        };
+    const count = randomInt(5, 7);
+    const start = randomInt(-2, 3);
+    const ticks = Array.from({ length: count }, (_, i) => start + i);
+
+    // vyber 3 rôzne indexy: dva olabelované, jeden hľadaný (šípka)
+    const idxs: number[] = [];
+    while (idxs.length < 3) {
+        const k = randomInt(0, count - 1);
+        if (!idxs.includes(k)) idxs.push(k);
     }
-    // bezpečný fallback
+    const askIndex = idxs[0];
+    const labeledIndices = [idxs[1], idxs[2]].sort((a, b) => a - b);
+    const answer = ticks[askIndex];
+
     return {
         id: uniqueId(),
         kind: 'standard',
-        expression: `Aké číslo je na číselnej osi v bode označenom šípkou?`,
-        result: 2,
-        steps: [`V označenom bode je číslo 2.`],
-        metadata: { type: 'number_line_read', min: 0, max: 1, marks: [{ value: 1, pos: 0.3 }, { value: 3, pos: 0.7 }], askPos: 0.5, answer: 2 },
+        expression: `Aké číslo patrí na číselnej osi k šípke?`,
+        result: answer,
+        steps: [
+            `Jeden dielik na osi znamená 1.`,
+            `Od známeho čísla odrátaj alebo priráta dieliky po šípku.`,
+            `Pri šípke je číslo ${answer}.`,
+        ],
+        metadata: { type: 'number_line_read', ticks, labeledIndices, askIndex, answer },
     };
 };
 

@@ -584,12 +584,12 @@ test('egyptian decompose selects correct unit-fraction sum', () => {
 });
 
 const numberLineRead = problem(
-    'Aké číslo je na číselnej osi v bode označenom šípkou?',
+    'Aké číslo patrí na číselnej osi k šípke?',
     2,
-    { type: 'number_line_read', min: 0, max: 1, marks: [{ value: 1, pos: 0.3 }, { value: 3, pos: 0.7 }], askPos: 0.5, answer: 2 },
+    { type: 'number_line_read', ticks: [0, 1, 2, 3, 4], labeledIndices: [3, 4], askIndex: 2, answer: 2 },
 );
 
-test('number line read returns the marked value', () => {
+test('number line read returns the value at the arrow tick', () => {
     assert.equal(isAnswerCorrect(numberLineRead, 2), true);
     assert.equal(isAnswerCorrect(numberLineRead, 3), false);
     assert.equal(isAnswerCorrect(numberLineRead, -2), false);

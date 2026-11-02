@@ -290,7 +290,7 @@ export type ProblemMetadata =
     | { type: 'coin_equation'; leftValues: number[]; knownOnRight: number[]; unknownCount: number; unit: 'c' | 'kg'; answer: number }
     | { type: 'coin_payment'; amount: number; variant: 'fewest' | 'exact_possible'; exactCount?: number; answer: number }
     | { type: 'egyptian_decompose'; numerator: number; denominator: number; options: string[]; correctIndex: number }
-    | { type: 'number_line_read'; min: number; max: number; marks: { value: number; pos: number }[]; askPos: number; answer: number }
+    | { type: 'number_line_read'; ticks: number[]; labeledIndices: number[]; askIndex: number; answer: number }
     | { type: 'indian_division' }
     | { type: 'long_division' }
     | { type: 'word_problem'; baseTopic?: WordProblemBaseTopic }
