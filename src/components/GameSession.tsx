@@ -2254,12 +2254,12 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="glass absolute p-6 rounded-xl flex flex-col items-center gap-4"
-                            style={{ maxWidth: '90%', top: '20%' }}
+                            className="glass absolute p-5 rounded-xl flex flex-col items-center gap-3"
+                            style={{ width: '92%', maxWidth: '460px', left: 0, right: 0, marginLeft: 'auto', marginRight: 'auto', top: '4%', maxHeight: '92%', overflow: 'hidden', zIndex: 20 }}
                         >
-                            <XCircle size={48} className={status === 'HINT' ? 'text-yellow-400' : 'text-red-500'} />
+                            <XCircle size={40} className={status === 'HINT' ? 'text-yellow-400' : 'text-red-500'} />
                             <h3 className="text-xl font-bold">{status === 'HINT' ? 'Skús ešte raz' : 'Chyba'}</h3>
-                            <div className="text-left bg-black/30 p-4 rounded w-full">
+                            <div className="text-left bg-black/30 p-4 rounded w-full" style={{ maxHeight: '48vh', overflowY: 'auto' }}>
                                 <p className="text-gray-400 text-sm mb-2">{feedbackTitle}</p>
                                 {feedback.map((step, i) => (
                                     <div key={i} className="font-mono text-lg">{step}</div>
@@ -2348,7 +2348,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                 </AnimatePresence>
             </div>
 
-            {equalPartsMeta || orderMeta || cubeMatchMeta || egyptianMeta ? null : isLogicalSequenceProblem(currentProblem) && effectiveDirectAnswers ? (
+            {status === 'IDLE' && (equalPartsMeta || orderMeta || cubeMatchMeta || egyptianMeta ? null : isLogicalSequenceProblem(currentProblem) && effectiveDirectAnswers ? (
                 <div className="game-keypad flex gap-4 w-full flex-wrap justify-center" style={{ maxWidth: '600px', marginTop: '1rem' }}>
                     {logicalVisual
                         ? logicalVisual.options.map((option: VisualSequenceOption) => (
@@ -2493,7 +2493,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                         </>
                     )}
                 </div>
-            )}
+            ))}
         </div>
     );
 };
