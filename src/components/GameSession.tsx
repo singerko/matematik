@@ -64,17 +64,19 @@ const sectorPath = (cx: number, cy: number, r: number, a0: number, a1: number) =
 // Vyfarbený útvar v zadaní (pruh / mriežka / koláč).
 const FractionShapeView: React.FC<{ shape: FractionShape }> = ({ shape }) => {
     if (shape.kind === 'bar') {
+        const w = 38;
+        const h = 48;
         return (
-            <svg width={Math.min(300, shape.parts * 44)} height={60} viewBox={`0 0 ${shape.parts * 44} 60`} role="img" aria-label="Vyfarbený pruh">
+            <svg width={Math.min(260, shape.parts * w)} height={h} viewBox={`0 0 ${shape.parts * w} ${h}`} role="img" aria-label="Vyfarbený pruh">
                 {Array.from({ length: shape.parts }).map((_, i) => (
-                    <rect key={i} x={i * 44} y={2} width={44} height={56} fill={i < shape.shaded ? FRACTION_FILL : FRACTION_EMPTY} stroke={FRACTION_STROKE} strokeWidth={2} />
+                    <rect key={i} x={i * w} y={2} width={w} height={h - 4} fill={i < shape.shaded ? FRACTION_FILL : FRACTION_EMPTY} stroke={FRACTION_STROKE} strokeWidth={2} />
                 ))}
             </svg>
         );
     }
 
     if (shape.kind === 'grid') {
-        const cell = 46;
+        const cell = 36;
         return (
             <svg width={shape.cols * cell} height={shape.rows * cell} viewBox={`0 0 ${shape.cols * cell} ${shape.rows * cell}`} role="img" aria-label="Vyfarbená mriežka">
                 {Array.from({ length: shape.rows * shape.cols }).map((_, i) => {
@@ -86,7 +88,7 @@ const FractionShapeView: React.FC<{ shape: FractionShape }> = ({ shape }) => {
         );
     }
 
-    const size = 150;
+    const size = 104;
     const r = size / 2 - 3;
     const base = 360 / shape.parts;
     return (
@@ -2011,7 +2013,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                             ) : (
                                 <>
                                     {fractionShape && (
-                                        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                                        <div style={{ marginBottom: '0.9rem', display: 'flex', justifyContent: 'center' }}>
                                             <FractionShapeView shape={fractionShape} />
                                         </div>
                                     )}
