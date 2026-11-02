@@ -789,13 +789,13 @@ const FractionAnswerInput: React.FC<{
             : 'rgba(96,165,250,0.45)';
 
     const fieldStyle = (active: boolean): React.CSSProperties => ({
-        minWidth: '5.5rem',
-        padding: '0.5rem 1rem',
-        borderRadius: '0.6rem',
-        fontSize: '2.4rem',
+        minWidth: '4.2rem',
+        padding: '0.2rem 0.85rem',
+        borderRadius: '0.5rem',
+        fontSize: '1.8rem',
         fontWeight: 900,
         fontFamily: 'monospace',
-        lineHeight: 1,
+        lineHeight: 1.1,
         color: '#f8fafc',
         background: active ? 'rgba(96,165,250,0.25)' : 'rgba(15,23,42,0.6)',
         border: active ? '2px solid rgba(147,197,253,0.9)' : '2px solid rgba(148,163,184,0.35)',
@@ -809,24 +809,24 @@ const FractionAnswerInput: React.FC<{
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '0.1rem',
-                padding: '0.9rem 1.4rem',
+                padding: '0.5rem 1.1rem',
                 borderRadius: '0.9rem',
                 border: `2px solid ${frameColor}`,
                 background: 'rgba(15,23,42,0.78)',
                 boxShadow: '0 10px 28px rgba(0,0,0,0.18)',
             }}
         >
-            <div style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+            <div style={{ color: '#94a3b8', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.2rem' }}>
                 Tvoja odpoveď
             </div>
             <button type="button" style={fieldStyle(activeField === 'num')} onClick={() => onSelect('num')}>
                 {numerator || '?'}
             </button>
-            <div style={{ width: '6.5rem', height: '4px', background: '#f8fafc', borderRadius: '2px', margin: '0.45rem 0' }} />
+            <div style={{ width: '4.8rem', height: '4px', background: '#f8fafc', borderRadius: '2px', margin: '0.28rem 0' }} />
             <button type="button" style={fieldStyle(activeField === 'den')} onClick={() => onSelect('den')}>
                 {denominator || '?'}
             </button>
-            <div style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+            <div style={{ color: '#64748b', fontSize: '0.7rem', marginTop: '0.3rem' }}>
                 hore čitateľ · dole menovateľ
             </div>
         </div>
