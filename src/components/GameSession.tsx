@@ -632,22 +632,17 @@ const NumberLineReadView: React.FC<{ marks: { value: number; pos: number }[]; as
     );
 };
 
-// Egyptské delenie: N bochníkov chleba (kruhy) rozdelených medzi M podielnikov.
-const BreadShareView: React.FC<{ loaves: number; people: number }> = ({ loaves, people }) => (
-    <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '320px' }}>
-            {Array.from({ length: loaves }).map((_, i) => (
-                <svg key={i} width={40} height={40} viewBox="0 0 40 40" role="img" aria-label="bochník">
-                    <ellipse cx={20} cy={20} rx={18} ry={14} fill="#c2854a" stroke="#78350f" strokeWidth={2} />
-                    <line x1={8} y1={16} x2={14} y2={16} stroke="#78350f" strokeWidth={1.5} />
-                    <line x1={18} y1={14} x2={24} y2={14} stroke="#78350f" strokeWidth={1.5} />
-                    <line x1={28} y1={16} x2={33} y2={16} stroke="#78350f" strokeWidth={1.5} />
-                </svg>
-            ))}
-        </div>
-        <div style={{ color: '#cbd5e1', fontSize: '0.9rem', fontWeight: 700 }}>
-            {loaves} {loaves >= 2 && loaves <= 4 ? 'chleby' : 'chlebov'} medzi {people} podielnikov
-        </div>
+// Egyptské delenie: N bochníkov chleba (malá dekorácia; počty sú už v zadaní).
+const BreadShareView: React.FC<{ loaves: number }> = ({ loaves }) => (
+    <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '280px' }}>
+        {Array.from({ length: loaves }).map((_, i) => (
+            <svg key={i} width={30} height={30} viewBox="0 0 40 40" role="img" aria-label="bochník">
+                <ellipse cx={20} cy={20} rx={18} ry={14} fill="#c2854a" stroke="#78350f" strokeWidth={2} />
+                <line x1={8} y1={16} x2={14} y2={16} stroke="#78350f" strokeWidth={1.5} />
+                <line x1={18} y1={14} x2={24} y2={14} stroke="#78350f" strokeWidth={1.5} />
+                <line x1={28} y1={16} x2={33} y2={16} stroke="#78350f" strokeWidth={1.5} />
+            </svg>
+        ))}
     </div>
 );
 
@@ -2043,8 +2038,8 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                         </div>
                                     )}
                                     {breadShareMeta && (
-                                        <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'center' }}>
-                                            <BreadShareView loaves={breadShareMeta.numerator} people={breadShareMeta.denominator} />
+                                        <div style={{ marginBottom: '0.8rem', display: 'flex', justifyContent: 'center' }}>
+                                            <BreadShareView loaves={breadShareMeta.numerator} />
                                         </div>
                                     )}
                                     {numberLineReadMeta && (

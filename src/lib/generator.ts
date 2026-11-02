@@ -1821,7 +1821,7 @@ const generateEgyptShareProblem = (): Problem => {
     return {
         id: uniqueId(),
         kind: 'standard',
-        expression: `${numerator} ${breadWord(numerator)} spravodlivo rozdelíme medzi ${denominator} podielnikov. Akú časť chleba dostane každý?`,
+        expression: `${numerator} ${breadWord(numerator)} rozdelíme medzi ${denominator} ľudí. Akú časť dostane každý?`,
         result: numerator / denominator,
         steps: [
             `Každý chlieb rozdelíme na ${denominator} rovnakých častí.`,
