@@ -2051,10 +2051,15 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                         </div>
                                     )}
                                     <div style={{
-                                        fontSize: currentProblem.kind === 'word_problem' ? '1.45rem' : currentProblem.expression.length > 15 ? '2rem' : currentProblem.expression.length > 10 ? '2.5rem' : '3.5rem',
+                                        fontSize: currentProblem.kind === 'word_problem' ? '1.35rem'
+                                            : currentProblem.expression.length > 40 ? '1.3rem'
+                                            : currentProblem.expression.length > 24 ? '1.6rem'
+                                            : currentProblem.expression.length > 15 ? '2rem'
+                                            : currentProblem.expression.length > 10 ? '2.5rem'
+                                            : '3.2rem',
                                         fontWeight: 800,
-                                        marginBottom: '2rem',
-                                        lineHeight: 1.2,
+                                        marginBottom: '1.25rem',
+                                        lineHeight: 1.25,
                                         padding: '0 1rem'
                                     }}>
                                         {currentProblem.expression.replace(/\*/g, '×').replace(/\//g, '÷')}

@@ -305,6 +305,9 @@ body {
 
 .game-stage {
   min-height: 0;
+  /* Keď je obsah vyšší než stred, zarovnaj k vrchu namiesto pretečenia cez buddy/klávesnicu. */
+  justify-content: safe center;
+  overflow-y: auto;
 }
 
 .game-keypad {
