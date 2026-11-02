@@ -607,6 +607,48 @@ const FractionCompareBars: React.FC<{ leftNum: number; leftDen: number; rightNum
     );
 };
 
+// Číselná os s dvoma známymi bodmi a jedným hľadaným (červená šípka).
+const NumberLineReadView: React.FC<{ marks: { value: number; pos: number }[]; askPos: number }> = ({ marks, askPos }) => {
+    const W = 340;
+    const H = 86;
+    const pad = 22;
+    const axisY = 52;
+    const sx = (pos: number) => pad + pos * (W - 2 * pad);
+    return (
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Číselná os">
+            <line x1={pad - 6} y1={axisY} x2={W - pad + 6} y2={axisY} stroke="#94a3b8" strokeWidth={2} strokeLinecap="round" />
+            {marks.map((m, i) => (
+                <g key={i}>
+                    <line x1={sx(m.pos)} y1={axisY - 6} x2={sx(m.pos)} y2={axisY + 6} stroke="#cbd5e1" strokeWidth={2.5} />
+                    <text x={sx(m.pos)} y={axisY + 22} textAnchor="middle" fontSize="15" fill="#e2e8f0" fontWeight="800">{m.value}</text>
+                </g>
+            ))}
+            <path d={`M ${sx(askPos)} ${axisY - 7} L ${sx(askPos) - 6} ${axisY - 22} L ${sx(askPos) + 6} ${axisY - 22} Z`} fill="#dc2626" />
+            <line x1={sx(askPos)} y1={axisY - 7} x2={sx(askPos)} y2={axisY - 22} stroke="#dc2626" strokeWidth={2} />
+            <text x={sx(askPos)} y={axisY - 28} textAnchor="middle" fontSize="16" fill="#f87171" fontWeight="900">?</text>
+        </svg>
+    );
+};
+
+// Egyptské delenie: N bochníkov chleba (kruhy) rozdelených medzi M podielnikov.
+const BreadShareView: React.FC<{ loaves: number; people: number }> = ({ loaves, people }) => (
+    <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '320px' }}>
+            {Array.from({ length: loaves }).map((_, i) => (
+                <svg key={i} width={40} height={40} viewBox="0 0 40 40" role="img" aria-label="bochník">
+                    <ellipse cx={20} cy={20} rx={18} ry={14} fill="#c2854a" stroke="#78350f" strokeWidth={2} />
+                    <line x1={8} y1={16} x2={14} y2={16} stroke="#78350f" strokeWidth={1.5} />
+                    <line x1={18} y1={14} x2={24} y2={14} stroke="#78350f" strokeWidth={1.5} />
+                    <line x1={28} y1={16} x2={33} y2={16} stroke="#78350f" strokeWidth={1.5} />
+                </svg>
+            ))}
+        </div>
+        <div style={{ color: '#cbd5e1', fontSize: '0.9rem', fontWeight: 700 }}>
+            {loaves} {loaves >= 2 && loaves <= 4 ? 'chleby' : 'chlebov'} medzi {people} podielnikov
+        </div>
+    </div>
+);
+
 // Mincová / váhová rovnica: známe mince/závažia vľavo = neznáme (žlté „?") vpravo.
 const CoinToken: React.FC<{ label: string; known: boolean; square: boolean }> = ({ label, known, square }) => (
     <div style={{
@@ -1668,11 +1710,14 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
     const equalPartsMeta = currentMeta?.type === 'fraction_equal_parts' ? currentMeta : null;
     const compareMeta = currentMeta?.type === 'fraction_compare' ? currentMeta : null;
     const orderMeta = currentMeta?.type === 'decimal_order' ? currentMeta : null;
+    const egyptianMeta = currentMeta?.type === 'egyptian_decompose' ? currentMeta : null;
     const numberLineMeta = currentMeta?.type === 'decimal_number_line' ? currentMeta : null;
     const cubePlanMeta = currentMeta?.type === 'cube_plan_count' ? currentMeta : null;
     const cubeSolidMeta = currentMeta?.type === 'cube_solid_count' ? currentMeta : null;
     const cubeMatchMeta = currentMeta?.type === 'cube_match' ? currentMeta : null;
     const coinEqMeta = currentMeta?.type === 'coin_equation' ? currentMeta : null;
+    const breadShareMeta = currentMeta?.type === 'fraction_answer' && currentMeta.context === 'share' ? currentMeta : null;
+    const numberLineReadMeta = currentMeta?.type === 'number_line_read' ? currentMeta : null;
     const isLongDivision = isLongDivisionProblem(currentProblem);
     const expectedWordOperation = getWordProblemOperation(currentProblem);
     const firstIntermediateStep = getFirstIntermediateStep(currentProblem);
@@ -1867,6 +1912,38 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                         })}
                                     </div>
                                 </>
+                            ) : egyptianMeta ? (
+                                <>
+                                    <div style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '1.25rem', lineHeight: 1.25, padding: '0 1rem' }}>
+                                        {currentProblem.expression}
+                                    </div>
+                                    <div className="flex justify-center gap-3" style={{ flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                                        {egyptianMeta.options.map((option, idx) => {
+                                            const letter = String.fromCharCode(65 + idx);
+                                            const selected = directAnswer?.value === idx;
+                                            const isCorrectOption = idx === egyptianMeta.correctIndex;
+                                            const showResult = directAnswer != null;
+                                            const background = showResult && selected
+                                                ? isCorrectOption ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.28)'
+                                                : showResult && isCorrectOption
+                                                    ? 'rgba(34,197,94,0.3)'
+                                                    : 'rgba(255,255,255,0.08)';
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    className="btn"
+                                                    style={{ padding: '0.9rem 1.2rem', borderRadius: '0.9rem', background, display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem' }}
+                                                    onClick={() => submitDirectAnswer(idx, option)}
+                                                    disabled={status !== 'IDLE'}
+                                                >
+                                                    <span style={{ color: '#f8fafc', fontWeight: 900, fontSize: '1.4rem' }}>{option}</span>
+                                                    <span style={{ color: '#93c5fd', fontWeight: 800 }}>{letter})</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </>
                             ) : orderMeta ? (
                                 <>
                                     <div style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '1.25rem', lineHeight: 1.25, padding: '0 1rem' }}>
@@ -1963,6 +2040,16 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                             <CoinEquationView leftValues={coinEqMeta.leftValues} knownOnRight={coinEqMeta.knownOnRight} unknownCount={coinEqMeta.unknownCount} unit={coinEqMeta.unit} />
                                         </div>
                                     )}
+                                    {breadShareMeta && (
+                                        <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'center' }}>
+                                            <BreadShareView loaves={breadShareMeta.numerator} people={breadShareMeta.denominator} />
+                                        </div>
+                                    )}
+                                    {numberLineReadMeta && (
+                                        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                                            <NumberLineReadView marks={numberLineReadMeta.marks} askPos={numberLineReadMeta.askPos} />
+                                        </div>
+                                    )}
                                     <div style={{
                                         fontSize: currentProblem.kind === 'word_problem' ? '1.45rem' : currentProblem.expression.length > 15 ? '2rem' : currentProblem.expression.length > 10 ? '2.5rem' : '3.5rem',
                                         fontWeight: 800,
@@ -1975,7 +2062,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                                 </>
                             )}
 
-                            {!isYesNoProblem(currentProblem) && !isFirstSecondProblem(currentProblem) && !equalPartsMeta && !orderMeta && !cubeMatchMeta && (
+                            {!isYesNoProblem(currentProblem) && !isFirstSecondProblem(currentProblem) && !equalPartsMeta && !orderMeta && !cubeMatchMeta && !egyptianMeta && (
                                 <>
                                     {guidedWarmup && (
                                         <div
@@ -2254,7 +2341,7 @@ const GameSession: React.FC<Props> = ({ settings, totalProblems, initialProblems
                 </AnimatePresence>
             </div>
 
-            {equalPartsMeta || orderMeta || cubeMatchMeta ? null : isLogicalSequenceProblem(currentProblem) && effectiveDirectAnswers ? (
+            {equalPartsMeta || orderMeta || cubeMatchMeta || egyptianMeta ? null : isLogicalSequenceProblem(currentProblem) && effectiveDirectAnswers ? (
                 <div className="game-keypad flex gap-4 w-full flex-wrap justify-center" style={{ maxWidth: '600px', marginTop: '1rem' }}>
                     {logicalVisual
                         ? logicalVisual.options.map((option: VisualSequenceOption) => (

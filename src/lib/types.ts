@@ -14,7 +14,7 @@ export type MultiplicationTableTopic =
     | 'multiplication_table_8'
     | 'multiplication_table_9'
     | 'multiplication_table_10';
-export type SchoolTopic = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'large_multiplication' | 'large_division' | 'indian_division' | 'long_division' | 'word_problem' | 'order_operations' | 'divisibility' | 'multiples_divisors' | 'fractions_intro' | 'decimals_intro' | 'cube_solids' | 'coin_equations' | 'number_comparison' | 'rounding' | 'unit_conversion' | 'geometry_area' | 'roman_numerals' | 'money_coins' | 'logical_sequences' | MultiplicationTableTopic;
+export type SchoolTopic = 'addition' | 'subtraction' | 'multiplication' | 'division' | 'large_multiplication' | 'large_division' | 'indian_division' | 'long_division' | 'word_problem' | 'order_operations' | 'divisibility' | 'multiples_divisors' | 'fractions_intro' | 'decimals_intro' | 'cube_solids' | 'coin_equations' | 'egyptian_fractions' | 'number_comparison' | 'rounding' | 'unit_conversion' | 'geometry_area' | 'roman_numerals' | 'money_coins' | 'logical_sequences' | MultiplicationTableTopic;
 
 export type LengthUnit = 'mm' | 'cm' | 'dm' | 'm' | 'km';
 export type WeightUnit = 'g' | 'kg';
@@ -233,7 +233,7 @@ export type WordProblemBaseTopic = 'addition' | 'subtraction' | 'multiplication'
 export type FractionQuantityContext = 'generic' | 'sharing' | 'chocolate' | 'students' | 'pizza';
 
 // Kontext pre úlohu, kde žiak zadáva zlomok (čitateľ/menovateľ) ako odpoveď.
-export type FractionAnswerContext = 'time' | 'set' | 'shape' | 'decimal';
+export type FractionAnswerContext = 'time' | 'set' | 'shape' | 'decimal' | 'share';
 
 // Vyfarbený útvar v zadaní — žiak z neho prečíta zlomok.
 export type FractionShape =
@@ -289,6 +289,8 @@ export type ProblemMetadata =
     | { type: 'cube_match'; grid: number[][]; options: number[][][]; correctIndex: number }
     | { type: 'coin_equation'; leftValues: number[]; knownOnRight: number[]; unknownCount: number; unit: 'c' | 'kg'; answer: number }
     | { type: 'coin_payment'; amount: number; variant: 'fewest' | 'exact_possible'; exactCount?: number; answer: number }
+    | { type: 'egyptian_decompose'; numerator: number; denominator: number; options: string[]; correctIndex: number }
+    | { type: 'number_line_read'; min: number; max: number; marks: { value: number; pos: number }[]; askPos: number; answer: number }
     | { type: 'indian_division' }
     | { type: 'long_division' }
     | { type: 'word_problem'; baseTopic?: WordProblemBaseTopic }
@@ -377,6 +379,8 @@ export type ErrorDiagnosisCode =
     | 'cube_match'
     | 'coin_equation'
     | 'coin_payment'
+    | 'egyptian_decompose'
+    | 'number_line_read'
     | 'fraction_equal_parts'
     | 'number_comparison_choice'
     | 'rounding_direction'

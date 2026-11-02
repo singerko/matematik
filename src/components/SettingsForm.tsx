@@ -40,6 +40,7 @@ const SCHOOL_TOPIC_LABELS: Record<SchoolTopic, string> = {
     decimals_intro: 'Desatinné čísla',
     cube_solids: 'Telesá z kociek',
     coin_equations: 'Mincové rovnice',
+    egyptian_fractions: 'Egyptské delenie chlebov',
     number_comparison: 'Porovnávanie čísel',
     rounding: 'Zaokrúhľovanie',
     unit_conversion: 'Premena jednotiek',

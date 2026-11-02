@@ -675,6 +675,7 @@ const generateSchoolTopicProblem = (settings: Constraints): Problem => {
         if (topic === 'decimals_intro') return true;
         if (topic === 'cube_solids') return true;
         if (topic === 'coin_equations') return true;
+        if (topic === 'egyptian_fractions') return true;
         if (topic === 'number_comparison') return true;
         if (topic === 'rounding') return true;
         if (topic === 'unit_conversion') return true;
@@ -737,6 +738,10 @@ const generateSchoolTopicProblem = (settings: Constraints): Problem => {
 
     if (topic === 'coin_equations') {
         return generateCoinEquationProblem();
+    }
+
+    if (topic === 'egyptian_fractions') {
+        return generateEgyptianProblem();
     }
 
     if (topic === 'number_comparison') {
@@ -1702,6 +1707,127 @@ const generateCoinEquationBasicProblem = (): Problem => {
             `Vpravo je ${unknownCount} rovnakých, preto ${sum} : ${unknownCount} = ${x} ${unit}.`,
         ],
         metadata: { type: 'coin_equation', leftValues, knownOnRight: [], unknownCount, unit, answer: x },
+    };
+};
+
+const breadWord = (n: number) => (n >= 2 && n <= 4 ? 'chleby' : 'chlebov');
+
+const generateEgyptianProblem = (): Problem => {
+    const r = Math.random();
+    if (r < 0.3) return generateEgyptianDecomposeProblem();
+    if (r < 0.5) return generateNumberLineReadProblem();
+    return generateEgyptShareProblem();
+};
+
+// Číselná os: z dvoch vyznačených bodov (hodnota + poloha) dopočítaj hodnotu tretieho.
+const generateNumberLineReadProblem = (): Problem => {
+    for (let attempt = 0; attempt < 40; attempt++) {
+        const u = randomChoice([0.12, 0.15, 0.18, 0.2, 0.25]); // poloha na jednotku
+        const o = 0.12 + Math.random() * 0.3; // poloha nuly
+        const candidates: { value: number; pos: number }[] = [];
+        for (let v = -4; v <= 9; v++) {
+            const pos = o + v * u;
+            if (pos >= 0.08 && pos <= 0.92) candidates.push({ value: v, pos });
+        }
+        if (candidates.length < 3) continue;
+        // vyber 3 rôzne (dva známe, jeden hľadaný)
+        const idxs = new Set<number>();
+        while (idxs.size < 3) idxs.add(randomInt(0, candidates.length - 1));
+        const [i1, i2, i3] = [...idxs];
+        const marks = [candidates[i1], candidates[i2]];
+        const ask = candidates[i3];
+        return {
+            id: uniqueId(),
+            kind: 'standard',
+            expression: `Aké číslo je na číselnej osi v bode označenom šípkou?`,
+            result: ask.value,
+            steps: [
+                `Z dvoch známych bodov zisti, aká vzdialenosť zodpovedá jednému číslu.`,
+                `V označenom bode je číslo ${ask.value}.`,
+            ],
+            metadata: { type: 'number_line_read', min: 0, max: 1, marks, askPos: ask.pos, answer: ask.value },
+        };
+    }
+    // bezpečný fallback
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Aké číslo je na číselnej osi v bode označenom šípkou?`,
+        result: 2,
+        steps: [`V označenom bode je číslo 2.`],
+        metadata: { type: 'number_line_read', min: 0, max: 1, marks: [{ value: 1, pos: 0.3 }, { value: 3, pos: 0.7 }], askPos: 0.5, answer: 2 },
+    };
+};
+
+const gcd2 = (a: number, b: number): number => (b === 0 ? a : gcd2(b, a % b));
+// Rodiny menovateľov – v rámci jednej rodiny sú súčty „pekné" a dobre porovnateľné.
+const EGYPT_FAMILIES = [[2, 3, 4, 6, 12], [2, 5, 10]];
+const unitPairValue = (a: number, b: number) => 1 / a + 1 / b;
+const unitPairLabel = (a: number, b: number) => {
+    const [lo, hi] = a <= b ? [a, b] : [b, a];
+    return `1⁄${lo} + 1⁄${hi}`;
+};
+
+// Egyptský rozklad: vyber súčet jednotkových zlomkov rovný danému zlomku.
+const generateEgyptianDecomposeProblem = (): Problem => {
+    const family = Math.random() < 0.7 ? EGYPT_FAMILIES[0] : EGYPT_FAMILIES[1];
+    // správny pár rôznych jednotkových zlomkov
+    const a = randomChoice(family);
+    let b = randomChoice(family);
+    while (a === b) b = randomChoice(family);
+    const value = unitPairValue(a, b);
+    const rawNum = b + a;
+    const rawDen = a * b;
+    const g = gcd2(rawNum, rawDen);
+    const numerator = rawNum / g;
+    const denominator = rawDen / g;
+
+    const correctLabel = unitPairLabel(a, b);
+    const labels = [correctLabel];
+    let guard = 0;
+    while (labels.length < 3 && guard++ < 200) {
+        const c = randomChoice(family);
+        let d = randomChoice(family);
+        while (c === d) d = randomChoice(family);
+        if (Math.abs(unitPairValue(c, d) - value) < 1e-9) continue; // nesmie sa rovnať
+        const label = unitPairLabel(c, d);
+        if (!labels.includes(label)) labels.push(label);
+    }
+
+    // premiešaj
+    for (let i = labels.length - 1; i > 0; i--) {
+        const j = randomInt(0, i);
+        [labels[i], labels[j]] = [labels[j], labels[i]];
+    }
+    const correctIndex = labels.indexOf(correctLabel);
+
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `Ktorý zápis sa rovná ${numerator}⁄${denominator}?`,
+        result: correctIndex,
+        steps: [
+            `Egypťania písali zlomky ako súčet jednotkových zlomkov.`,
+            `${numerator}⁄${denominator} = ${correctLabel} (možnosť ${String.fromCharCode(65 + correctIndex)}).`,
+        ],
+        metadata: { type: 'egyptian_decompose', numerator, denominator, options: labels, correctIndex },
+    };
+};
+
+// Egyptské delenie: N chlebov medzi M podielnikov → každý dostane N/M chleba (zlomok, akceptuje ekvivalenty).
+const generateEgyptShareProblem = (): Problem => {
+    const denominator = randomInt(3, 13);
+    const numerator = randomInt(2, denominator - 1);
+    return {
+        id: uniqueId(),
+        kind: 'standard',
+        expression: `${numerator} ${breadWord(numerator)} spravodlivo rozdelíme medzi ${denominator} podielnikov. Akú časť chleba dostane každý?`,
+        result: numerator / denominator,
+        steps: [
+            `Každý chlieb rozdelíme na ${denominator} rovnakých častí.`,
+            `Z ${numerator} chlebov dostane každý ${numerator} takých častí → ${numerator}/${denominator} chleba.`,
+        ],
+        metadata: { type: 'fraction_answer', numerator, denominator, context: 'share' },
     };
 };
 

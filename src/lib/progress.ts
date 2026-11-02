@@ -457,6 +457,15 @@ const recommendedForDiagnosis = (code: ErrorDiagnosisCode): Problem[] => {
                 { ...createProblem('Najmenej koľkými mincami zaplatíš 7 c?', 2), metadata: { type: 'coin_payment', amount: 7, variant: 'fewest', answer: 2 } },
                 { ...createProblem('Dá sa zaplatiť 7 c práve 3 mincami? 1=áno, 0=nie', 1), metadata: { type: 'coin_payment', amount: 7, variant: 'exact_possible', exactCount: 3, answer: 1 } },
             ];
+        case 'egyptian_decompose':
+            return [
+                { ...createProblem('Ktorý zápis sa rovná 3⁄4?', 0), metadata: { type: 'egyptian_decompose', numerator: 3, denominator: 4, options: ['1⁄2 + 1⁄4', '1⁄3 + 1⁄4', '1⁄2 + 1⁄3'], correctIndex: 0 } },
+                { ...createProblem('Ktorý zápis sa rovná 5⁄6?', 1), metadata: { type: 'egyptian_decompose', numerator: 5, denominator: 6, options: ['1⁄2 + 1⁄4', '1⁄2 + 1⁄3', '1⁄3 + 1⁄4'], correctIndex: 1 } },
+            ];
+        case 'number_line_read':
+            return [
+                { ...createProblem('Aké číslo je v označenom bode na číselnej osi?', 2), metadata: { type: 'number_line_read', min: 0, max: 1, marks: [{ value: 1, pos: 0.25 }, { value: 3, pos: 0.75 }], askPos: 0.5, answer: 2 } },
+            ];
         case 'number_comparison_choice':
             return [
                 createProblem('Ktoré číslo je väčšie: 48 alebo 52? 1=prvý, 0=druhý', 0),

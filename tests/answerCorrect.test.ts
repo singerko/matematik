@@ -558,3 +558,39 @@ test('coin payment exact possibility yes/no', () => {
     assert.equal(isAnswerCorrect(coinExactNo, 'nie'), true);
     assert.equal(isAnswerCorrect(coinExactNo, 1), false);
 });
+
+const egyptShare = problem(
+    '4 chleby spravodlivo rozdelíme medzi 6 podielnikov. Akú časť chleba dostane každý?',
+    4 / 6,
+    { type: 'fraction_answer', numerator: 4, denominator: 6, context: 'share' },
+);
+
+test('egyptian share accepts the fraction and its equivalents', () => {
+    assert.equal(isAnswerCorrect(egyptShare, '4/6'), true);
+    assert.equal(isAnswerCorrect(egyptShare, '2/3'), true);
+    assert.equal(isAnswerCorrect(egyptShare, '4/7'), false);
+});
+
+const egyptDecompose = problem(
+    'Ktorý zápis sa rovná 3⁄4?',
+    0,
+    { type: 'egyptian_decompose', numerator: 3, denominator: 4, options: ['1⁄2 + 1⁄4', '1⁄3 + 1⁄4', '1⁄2 + 1⁄3'], correctIndex: 0 },
+);
+
+test('egyptian decompose selects correct unit-fraction sum', () => {
+    assert.equal(isAnswerCorrect(egyptDecompose, 0), true);
+    assert.equal(isAnswerCorrect(egyptDecompose, 1), false);
+    assert.equal(isAnswerCorrect(egyptDecompose, 2), false);
+});
+
+const numberLineRead = problem(
+    'Aké číslo je na číselnej osi v bode označenom šípkou?',
+    2,
+    { type: 'number_line_read', min: 0, max: 1, marks: [{ value: 1, pos: 0.3 }, { value: 3, pos: 0.7 }], askPos: 0.5, answer: 2 },
+);
+
+test('number line read returns the marked value', () => {
+    assert.equal(isAnswerCorrect(numberLineRead, 2), true);
+    assert.equal(isAnswerCorrect(numberLineRead, 3), false);
+    assert.equal(isAnswerCorrect(numberLineRead, -2), false);
+});

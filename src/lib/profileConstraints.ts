@@ -68,6 +68,7 @@ export const resolveProfileConstraints = (profile: Profile): Constraints => {
             ...(enabledTopics.includes('decimals_intro') ? ['+'] as const : []),
             ...(enabledTopics.includes('cube_solids') ? ['+'] as const : []),
             ...(enabledTopics.includes('coin_equations') ? ['+'] as const : []),
+            ...(enabledTopics.includes('egyptian_fractions') ? ['+'] as const : []),
         ],
         maxNumbers: 2,
         exactOperationCount: 1,

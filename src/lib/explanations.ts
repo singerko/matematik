@@ -570,6 +570,21 @@ const explainByMetadata = (problem: Problem, metadata: ProblemMetadata): Problem
         }
         case 'fraction_answer': {
             const { numerator, denominator, context } = metadata;
+            if (context === 'share') {
+                return {
+                    topic: 'egyptské delenie chlebov',
+                    hint: `Každý chlieb rozdeľ na toľko častí, koľko je podielnikov (${denominator}).`,
+                    hints: [
+                        { id: 'den', title: 'menovateľ', text: `Počet podielnikov je menovateľ: ${denominator}.` },
+                        { id: 'num', title: 'čitateľ', text: `Počet chlebov je čitateľ: ${numerator}. Každý dostane ${numerator}/${denominator}.` },
+                    ],
+                    steps: [
+                        `Každý chlieb rozdelíme na ${denominator} častí (podľa počtu podielnikov).`,
+                        `Z ${numerator} chlebov dostane každý ${numerator}/${denominator} chleba.`,
+                    ],
+                    recommendation: 'Precvič spravodlivé delenie ako zlomok.',
+                };
+            }
             if (context === 'decimal') {
                 return {
                     topic: 'desatinné čísla a zlomky',
@@ -798,6 +813,31 @@ const explainByMetadata = (problem: Problem, metadata: ProblemMetadata): Problem
                     answer === 1 ? `${amount} c sa práve ${exactCount} mincami dá.` : `${amount} c sa práve ${exactCount} mincami nedá.`,
                 ],
                 recommendation: 'Precvič, koľkými mincami sa dá zaplatiť suma.',
+            };
+        }
+        case 'egyptian_decompose': {
+            const { numerator, denominator, options, correctIndex } = metadata;
+            const letter = String.fromCharCode(65 + correctIndex);
+            return {
+                topic: 'egyptský rozklad zlomku',
+                hint: `Egypťania písali zlomky ako súčet jednotkových zlomkov (s čitateľom 1).`,
+                steps: [
+                    `Hľadaj súčet jednotkových zlomkov, ktorý sa rovná ${numerator}/${denominator}.`,
+                    `Správny je ${options[correctIndex]} (možnosť ${letter}).`,
+                ],
+                recommendation: 'Precvič rozklad zlomku na jednotkové zlomky.',
+            };
+        }
+        case 'number_line_read': {
+            const { answer } = metadata;
+            return {
+                topic: 'čítanie z číselnej osi',
+                hint: `Zisti, akú hodnotu má jeden dielik, a dopočítaj hľadaný bod.`,
+                steps: [
+                    `Z dvoch známych bodov urči dĺžku jedného dielika.`,
+                    `Hľadaný bod je ${answer}.`,
+                ],
+                recommendation: 'Precvič čítanie hodnôt z číselnej osi.',
             };
         }
         case 'cube_match': {
@@ -1222,6 +1262,9 @@ export const diagnoseAnswer = (problem: Problem, userAnswer: number | string): s
                 const { numerator, denominator, context } = metadata;
                 const parsed = parseFractionAnswer(userAnswer);
                 if (!parsed) return 'Zadaj čitateľ aj menovateľ zlomku.';
+                if (context === 'share') {
+                    return `Počet podielnikov je menovateľ (${denominator}), počet chlebov je čitateľ (${numerator}). Každý dostane ${numerator}/${denominator}.`;
+                }
                 if (context === 'decimal') {
                     return `Počet miest za čiarkou je menovateľ (${denominator}), cifry za čiarkou sú čitateľ (${numerator}). Odpoveď je ${numerator}/${denominator} (alebo skrátene).`;
                 }
@@ -1303,6 +1346,15 @@ export const diagnoseAnswer = (problem: Problem, userAnswer: number | string): s
             case 'cube_match': {
                 const { correctIndex } = metadata;
                 return `Porovnaj výšku každého stĺpca s plánmi. Správny je plán ${String.fromCharCode(65 + correctIndex)}.`;
+            }
+            case 'egyptian_decompose': {
+                const { options, correctIndex } = metadata;
+                return `Hľadáme súčet jednotkových zlomkov. Správny je ${options[correctIndex]} (možnosť ${String.fromCharCode(65 + correctIndex)}).`;
+            }
+            case 'number_line_read': {
+                const { answer } = metadata;
+                if (numericAnswer === null) return 'Odpoveď nebola čitateľné číslo.';
+                return `Urči hodnotu jedného dielika z dvoch známych bodov. Hľadaný bod je ${answer}.`;
             }
             case 'coin_equation': {
                 const { leftValues, knownOnRight, unknownCount, unit, answer } = metadata;
@@ -1449,6 +1501,8 @@ const DIAGNOSIS_LABELS: Record<ErrorDiagnosisCode, string> = {
     cube_match: 'podlažný plán telesa',
     coin_equation: 'mincové rovnice',
     coin_payment: 'platenie mincami',
+    egyptian_decompose: 'egyptský rozklad zlomku',
+    number_line_read: 'čítanie z číselnej osi',
     number_comparison_choice: 'výber prvého alebo druhého čísla',
     rounding_direction: 'smer zaokrúhlenia',
     unit_conversion_direction: 'smer premeny jednotiek',
@@ -1573,6 +1627,10 @@ const classifyAnswer = (problem: Problem, userAnswer: number | string): ErrorDia
             return 'coin_equation';
         case 'coin_payment':
             return 'coin_payment';
+        case 'egyptian_decompose':
+            return 'egyptian_decompose';
+        case 'number_line_read':
+            return 'number_line_read';
         case 'number_comparison':
             return 'number_comparison_choice';
         case 'rounding':
