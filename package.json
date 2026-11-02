@@ -1,7 +1,7 @@
 {
   "name": "matematik",
   "private": true,
-  "version": "0.0.54",
+  "version": "0.0.65",
   "type": "module",
   "scripts": {
     "dev": "vite",
